@@ -8,21 +8,13 @@
     <style>
         :root { --primary: #0088cc; --gold: #ffcc00; --bg: #f4f7f9; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        
-        /* Capas de Interfaz */
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box; }
         #mainApp { flex: 1; display: flex; flex-direction: column; padding: 20px; transition: 0.5s; filter: blur(15px); pointer-events: none; }
         .active-app { filter: blur(0) !important; pointer-events: auto !important; }
-
-        /* Tarjetas y Botones */
         .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .btn-blue { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; font-size: 16px; }
-        .btn-gold { background: var(--gold); color: black; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; display: none; }
-        
-        /* Formulario de Registro */
         input, select { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
         .readonly { background: #f0f0f0; color: #777; cursor: not-allowed; }
-        .file-label { font-size: 12px; color: #666; display: block; text-align: left; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -30,55 +22,44 @@
     <div id="overlay">
         <div id="statusBox" style="max-width: 400px; width: 100%;">
             <h2 id="title">Verificando Identidad...</h2>
-            <p id="desc">Conectando con el Soberano de Samy.</p>
-
+            <p id="desc">Estableciendo conexión segura.</p>
             <form id="formRegistro" style="display: none; text-align: left;">
                 <input type="text" id="regName" placeholder="Nombre Completo" required>
                 <input type="number" id="regDoc" placeholder="Número de Cédula" required>
                 <input type="text" id="regPhone" class="readonly" readonly>
-                
-                <span class="file-label">📸 Foto de Perfil</span>
+                <p style="font-size: 12px; color: #666; margin: 5px 0;">📸 Foto Perfil y Cédula (Max 200KB auto)</p>
                 <input type="file" id="imgPerfil" accept="image/*" required>
-                
-                <span class="file-label">🪪 Foto Cédula (Frontal)</span>
                 <input type="file" id="imgDoc" accept="image/*" required>
-
-                <button type="submit" id="btnSubmit" class="btn-blue" style="margin-top: 20px;">Enviar Datos a Aduana</button>
+                <button type="submit" id="btnSubmit" class="btn-blue">Enviar a Aduana</button>
             </form>
         </div>
     </div>
 
     <div id="mainApp">
         <div class="card">
-            <h2 id="welcomeUser" style="margin: 0;">Hola, Usuario</h2>
-            <p id="userStatus" style="color: #666; font-size: 14px;">Estado: Verificando...</p>
-            <div id="balance" style="font-size: 32px; font-weight: bold; color: var(--primary); margin-top: 10px;">$0</div>
+            <h2 id="welcomeUser">Hola</h2>
+            <p id="userStatus">Estado: Verificando...</p>
+            <div id="balance" style="font-size: 32px; font-weight: bold; color: var(--primary);">$0</div>
         </div>
-
         <div style="flex: 1; background: #dfe6e9; border-radius: 20px; display: flex; align-items: center; justify-content: center; border: 2px dashed #b2bec3;">
             <span style="color: #636e72;">📍 Mapa de Samy Activo</span>
         </div>
-
         <button class="btn-blue" style="margin-top: 20px;">🚖 Solicitar Servicio</button>
-        <button id="btnSoberano" class="btn-gold" onclick="alert('Abriendo Panel de Control...')">👑 PANEL DEL SOBERANO</button>
     </div>
 
     <script>
-        // 1. CONFIGURACIÓN DE LLAVES (Vercel enviará estas al cliente)
-        // Como estamos en el cliente, las inyectaremos mediante un truco de Vercel 
-        // o las pegas aquí si prefieres rapidez hoy. 
         const SUPABASE_URL = "https://fsdqvdxvhqauyqczgsfb.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzZHF2ZHh2aHFhdXlxY3pnc2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NjU0OTIsImV4cCI6MjA5MDU0MTQ5Mn0.AA7CgSig_lgXSwVeZex-C1AExRKgN1sMuIBnzH9pfqM"; // <--- Reemplaza con tu anon key de Supabase
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzZHF2ZHh2aHFhdXlxY3pnc2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NjU0OTIsImV4cCI6MjA5MDU0MTQ5Mn0.AA7CgSig_lgXSwVeZex-C1AExRKgN1sMuIBnzH9pfqM";
         
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // 1. INICIALIZACIÓN SIN CONFLICTOS
+        const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Capturar datos de la URL (desde el bot)
         const params = new URLSearchParams(window.location.search);
         const chatId = params.get('id');
         const phone = params.get('phone');
         const SOBERANO_PHONE = "573145210546";
 
-        // 2. FUNCIÓN DE COMPRESIÓN (MÁXIMO 200KB)
+        // 2. COMPRESIÓN DE IMÁGENES
         async function procesarImagen(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -89,53 +70,50 @@
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
-                        // Redimensionar para ahorrar espacio
-                        const MAX_W = 800;
-                        const scale = Math.min(MAX_W / img.width, 1);
+                        const scale = Math.min(800 / img.width, 1);
                         canvas.width = img.width * scale;
                         canvas.height = img.height * scale;
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        // Comprimir a 70% de calidad
                         canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
                     };
                 };
             });
         }
 
-        // 3. LÓGICA DE ESTADO Y SEGURIDAD
+        // 3. LÓGICA DE ARRANQUE
         async function inicializar() {
-            if (!chatId || !phone) {
-                document.getElementById('title').innerText = "Acceso Denegado";
-                document.getElementById('desc').innerText = "Debes abrir esta App desde el Bot oficial de Samy.";
-                return;
-            }
-
-            document.getElementById('regPhone').value = `+${phone}`;
-
-            // ¿Es el Soberano?
-            if (phone === SOBERANO_PHONE) {
-                activarApp("Soberano Carlos", "Control Total", "Infinito");
-                document.getElementById('btnSoberano').style.display = 'block';
-                return;
-            }
-
-            // Verificar si ya existe en Profiles (Aprobado)
-            const { data: profile } = await supabase.from('profiles').select('*').eq('id', chatId).single();
-            
-            if (profile) {
-                activarApp(profile.full_name, "Usuario Activo", profile.balance_prepago);
-            } else {
-                // Verificar si está en Pre-registro (Aduana)
-                const { data: pre } = await supabase.from('pre_registro').select('*').eq('id', chatId).single();
-                if (pre) {
-                    document.getElementById('title').innerText = "⏳ En Revisión";
-                    document.getElementById('desc').innerText = "Hola " + pre.full_name + ", tus documentos están en aduana. El Soberano te notificará por Telegram.";
-                } else {
-                    // Mostrar Formulario de Registro
-                    document.getElementById('title').innerText = "🚀 Bienvenido a Samy";
-                    document.getElementById('desc').innerText = "Regístrate para empezar a viajar.";
-                    document.getElementById('formRegistro').style.display = 'block';
+            try {
+                if (!chatId || !phone) {
+                    document.getElementById('title').innerText = "❌ Acceso Denegado";
+                    document.getElementById('desc').innerText = "Abre la app desde el Bot.";
+                    return;
                 }
+
+                document.getElementById('regPhone').value = `+${phone}`;
+
+                if (phone === SOBERANO_PHONE) {
+                    activarApp("Soberano Carlos", "Control Total", "Infinito");
+                    return;
+                }
+
+                const { data: profile } = await _supabase.from('profiles').select('*').eq('id', chatId).maybeSingle();
+                
+                if (profile) {
+                    activarApp(profile.full_name, "Activo", profile.balance_prepago);
+                } else {
+                    const { data: pre } = await _supabase.from('pre_registro').select('*').eq('id', chatId).maybeSingle();
+                    if (pre) {
+                        document.getElementById('title').innerText = "⏳ En Aduana";
+                        document.getElementById('desc').innerText = "Tus documentos están en revisión.";
+                    } else {
+                        document.getElementById('formRegistro').style.display = 'block';
+                        document.getElementById('title').innerText = "Registro Samy";
+                        document.getElementById('desc').innerText = "Completa tus datos.";
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('desc').innerText = "Error: " + err.message;
             }
         }
 
@@ -144,41 +122,8 @@
             document.getElementById('mainApp').classList.add('active-app');
             document.getElementById('welcomeUser').innerText = "Hola, " + nombre;
             document.getElementById('userStatus').innerText = "Estado: " + status;
-            document.getElementById('balance').innerText = "$" + saldo;
+            document.getElementById('balance').innerText = "$" + (saldo || 0);
         }
-
-        // 4. ENVÍO DE FORMULARIO CON COMPRESIÓN
-        document.getElementById('formRegistro').onsubmit = async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btnSubmit');
-            btn.disabled = true;
-            btn.innerText = "Comprimiendo fotos...";
-
-            try {
-                // Comprimir fotos antes de enviar
-                const fotoPerfil = await procesarImagen(document.getElementById('imgPerfil').files[0]);
-                const fotoDoc = await procesarImagen(document.getElementById('imgDoc').files[0]);
-
-                // NOTA: Aquí falta la conexión a Cloudinary que configuraremos después.
-                // Por ahora guardamos los datos básicos para probar el blindaje.
-
-                const { error } = await supabase.from('pre_registro').insert([{
-                    id: chatId,
-                    full_name: document.getElementById('regName').value,
-                    phone: phone,
-                    numero_documento: document.getElementById('regDoc').value,
-                    status: 'pendiente'
-                }]);
-
-                if (error) throw error;
-                location.reload(); // Refrescar para mostrar estado "En Aduana"
-
-            } catch (err) {
-                alert("Error: " + err.message);
-                btn.disabled = false;
-                btn.innerText = "Enviar Datos a Aduana";
-            }
-        };
 
         window.onload = inicializar;
     </script>
