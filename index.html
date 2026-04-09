@@ -3,146 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Samy - Registro Oficial</title>
+    <title>Samy - Plataforma Integral</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; padding: 20px; display: flex; justify-content: center; }
-        .card { background: white; padding: 30px; border-radius: 20px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #0088cc; margin-bottom: 5px; }
-        p { text-align: center; font-size: 12px; color: #666; margin-bottom: 25px; }
-        .field { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; color: #333; }
-        input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
-        .preview-box { width: 100%; height: 120px; background: #fafafa; border: 2px dashed #ddd; border-radius: 10px; margin-top: 5px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .preview-box img { width: 100%; height: 100%; object-fit: cover; }
-        .btn { background: #0088cc; color: white; border: none; padding: 18px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 25px; font-size: 16px; transition: 0.3s; }
-        .btn:disabled { background: #aaa; cursor: not-allowed; }
+        :root { --primary: #0088cc; --gold: #ffcc00; --bg: #f0f2f5; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 0; }
+        
+        /* Capa de Bloqueo (Overlay) */
+        #overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(255,255,255,0.8); backdrop-filter: blur(8px); 
+            z-index: 1000; display: flex; align-items: center; justify-content: center;
+        }
+
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 400px; }
+        
+        /* Interfaz de Fondo (Samy App) */
+        .app-container { filter: blur(2px); pointer-events: none; padding: 20px; transition: 0.5s; }
+        .app-active { filter: blur(0); pointer-events: auto; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .map-placeholder { width: 100%; height: 200px; background: #ddd; border-radius: 15px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; }
+        
+        /* Botón Soberano */
+        #btnAdmin { display: none; background: var(--gold); color: black; font-weight: bold; border: none; padding: 10px; border-radius: 10px; cursor: pointer; margin-top: 10px; width: 100%; }
+
+        /* Estilos Formulario */
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
+        .btn-main { background: var(--primary); color: white; border: none; padding: 15px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        .readonly-field { background: #eee; cursor: not-allowed; color: #666; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>🚀 Registro a Samy</h2>
-        <p>Completa tu identidad legal para activar el QR</p>
-        
-        <form id="formSamy">
-            <div class="field">
-                <label>Nombre Completo (como en Cédula)</label>
-                <input type="text" id="full_name" placeholder="Ej: Luis Fernando Arrieta Pulido" required>
-            </div>
 
-            <div class="field">
-                <label>Número de Cédula</label>
-                <input type="number" id="numero_documento" placeholder="Sin puntos ni comas" required>
-            </div>
+    <div id="mainApp" class="app-container">
+        <div class="header">
+            <h2 id="welcomeName">Samy App</h2>
+            <div id="userBalance" style="font-weight: bold;">Bolsa: $0</div>
+        </div>
+        <div class="map-placeholder">📍 Mapa de Samy (PostGIS Activo)</div>
+        <button class="btn-main" onclick="alert('Solicitando servicio...')">🚖 Pedir Samy</button>
+        <button id="btnAdmin" onclick="toggleAduana()">👑 PANEL DE ADUANA</button>
+    </div>
 
-            <div class="field">
-                <label>Género Biológico</label>
-                <select id="genero" required>
+    <div id="overlay">
+        <div id="regCard" class="card">
+            <h2 id="modalTitle">🚀 Registro Legal</h2>
+            <p id="modalDesc">Completa tu identidad para activar Samy.</p>
+            
+            <form id="formSamy">
+                <input type="text" id="full_name" placeholder="Nombre Completo" required>
+                <input type="number" id="cedula" placeholder="Número de Cédula" required>
+                <input type="text" id="phone_display" class="readonly-field" readonly>
+                
+                <label>Género</label>
+                <select id="genero">
                     <option value="Hombre">Hombre</option>
                     <option value="Mujer">Mujer</option>
                 </select>
-            </div>
 
-            <hr style="border: 0.9px solid #eee; margin: 20px 0;">
-
-            <div class="field">
-                <label>👤 Foto de Perfil (Rostro claro)</label>
-                <input type="file" id="foto_p" accept="image/*" capture="user" required onchange="preview(this, 'pP')">
-                <div class="preview-box" id="pP">Vista previa</div>
-            </div>
-
-            <div class="field">
-                <label>🪪 Cédula Frontal</label>
-                <input type="file" id="foto_f" accept="image/*" capture="environment" required onchange="preview(this, 'pF')">
-                <div class="preview-box" id="pF">Vista previa</div>
-            </div>
-
-            <div class="field">
-                <label>🪪 Cédula Posterior</label>
-                <input type="file" id="foto_t" accept="image/*" capture="environment" required onchange="preview(this, 'pT')">
-                <div class="preview-box" id="pT">Vista previa</div>
-            </div>
-
-            <button type="submit" class="btn" id="subirBtn">Enviar a Revisión Legal</button>
-        </form>
+                <p style="font-size: 10px;">👤 Foto Perfil | 🪪 Cédula Frontal | 🪪 Cédula Trasera</p>
+                <input type="file" id="f_perfil" accept="image/*" required>
+                <input type="file" id="f_frontal" accept="image/*" required>
+                
+                <button type="submit" class="btn-main" id="btnSubmit">Enviar a Revisión</button>
+            </form>
+        </div>
     </div>
 
     <script>
-        // CONFIGURACIÓN (Con tus datos de capturas anteriores)
-        const SUPABASE_URL = "https://fsdqvdxvhqauyqczgsfb.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzZHF2ZHh2aHFhdXlxY3pnc2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NjU0OTIsImV4cCI6MjA5MDU0MTQ5Mn0.AA7CgSig_lgXSwVeZex-C1AExRKgN1sMuIBnzH9pfqM";
-        const CLOUD_NAME = "dluwuj6wg";
-        const UPLOAD_PRESET = "samy_docs";
+        // CONFIGURACIÓN (Usa tus credenciales de Supabase)
+        const SB_URL = "https://fsdqvdxvhqauyqczgsfb.supabase.co";
+        const SB_KEY = "tu_anon_key_aqui"; // Pon tu clave aquí
+        const supabase = supabase.createClient(SB_URL, SB_KEY);
 
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        const userId = new URLSearchParams(window.location.search).get('id');
+        // Capturar datos de la URL del Edge Function
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('id');
+        const userPhone = urlParams.get('phone');
+        const ADMIN_PHONE = "573145210546"; // Tu número real
 
-        // Función de vista previa
-        function preview(input, id) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => document.getElementById(id).innerHTML = `<img src="${e.target.result}">`;
-                reader.readAsDataURL(input.files[0]);
+        document.getElementById('phone_display').value = userPhone ? `+${userPhone}` : "Sin teléfono";
+
+        async function verificarEstado() {
+            if (!userId) {
+                alert("Error: Accede desde el bot de Telegram");
+                return;
+            }
+
+            // 1. ¿Es el Soberano?
+            if (userPhone === ADMIN_PHONE) {
+                activarModoSoberano();
+                return;
+            }
+
+            // 2. ¿Ya está aprobado?
+            const { data: oficial } = await supabase.from('profiles').select('*').eq('id', userId).single();
+            if (oficial) {
+                document.getElementById('overlay').style.display = 'none';
+                document.getElementById('mainApp').classList.add('app-active');
+                document.getElementById('welcomeName').innerText = `Hola, ${oficial.full_name}`;
+                document.getElementById('userBalance').innerText = `Bolsa: $${oficial.balance_prepago}`;
+                return;
+            }
+
+            // 3. ¿Está en Aduana (esperando)?
+            const { data: aduana } = await supabase.from('pre_registro').select('*').eq('id', userId).single();
+            if (aduana) {
+                document.getElementById('formSamy').style.display = 'none';
+                document.getElementById('modalTitle').innerText = "⏳ En Revisión";
+                document.getElementById('modalDesc').innerText = `Hola ${aduana.full_name}, tus documentos están en manos del Soberano. Te avisaremos por Telegram.`;
             }
         }
 
-        async function subirACloudinary(file, folder, publicId) {
-            // Regla de oro: Máximo 200kb
-            if (file.size > 205000) throw new Error("La imagen es muy pesada. Máximo 200KB.");
-
-            const fd = new FormData();
-            fd.append('file', file);
-            fd.append('upload_preset', UPLOAD_PRESET);
-            fd.append('folder', folder);
-            fd.append('public_id', publicId);
-
-            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: fd });
-            const data = await res.json();
-            if (!data.secure_url) throw new Error("Error al subir a la nube");
-            return data.secure_url;
+        function activarModoSoberano() {
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('mainApp').classList.add('app-active');
+            document.getElementById('btnAdmin').style.display = 'block';
+            document.getElementById('welcomeName').innerText = "Carlos Albeiro (Soberano)";
         }
 
-        document.getElementById('formSamy').onsubmit = async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('subirBtn');
-            const cedula = document.getElementById('numero_documento').value;
+        // Lógica de Registro (Cloudinary + Supabase pre_registro)
+        // ... aquí iría el código de subida que ya tenemos ...
 
-            if(!userId) return alert("Error: No se detectó ID de Telegram. Abre el link desde el bot.");
-
-            btn.disabled = true;
-            btn.innerText = "Validando y Subiendo...";
-
-            try {
-                // 1. Subidas cruzadas a Cloudinary con nombres por cédula
-                const urlPerfil = await subirACloudinary(document.getElementById('foto_p').files[0], "Ima_Profiles", `perfil_${cedula}`);
-                const urlFront = await subirACloudinary(document.getElementById('foto_f').files[0], "Ima_Doc", `doc_frontal_${cedula}`);
-                const urlBack = await subirACloudinary(document.getElementById('foto_t').files[0], "Ima_Doc", `doc_trasero_${cedula}`);
-
-                // 2. Registro en la "Aduana" (pre_registro)
-                const { error } = await supabaseClient.from('pre_registro').insert([{
-                    id: userId,
-                    full_name: document.getElementById('full_name').value,
-                    numero_documento: cedula,
-                    genero: document.getElementById('genero').value,
-                    foto_perfil_url: urlPerfil,
-                    foto_cedula_frontal_url: urlFront,
-                    foto_cedula_trasera_url: urlBack
-                }]);
-
-                if (error) {
-                    if(error.code === '23505') throw new Error("Esta cédula ya está registrada o en proceso.");
-                    throw error;
-                }
-
-                alert("¡Excelente! Documentos en manos del Admin. Samy te notificará por Telegram.");
-                window.close();
-
-            } catch (err) {
-                alert("Atención: " + err.message);
-                btn.disabled = false;
-                btn.innerText = "Reintentar Envío";
-            }
-        };
+        window.onload = verificarEstado;
     </script>
 </body>
 </html>
