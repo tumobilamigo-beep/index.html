@@ -74,7 +74,7 @@
         const CLOUD_NAME = "dluwuj6wg";
         const UPLOAD_PRESET = "samy_docs";
 
-        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const userId = new URLSearchParams(window.location.search).get('id');
 
         // Función de vista previa
