@@ -13,7 +13,7 @@
         .active-app { filter: blur(0) !important; pointer-events: auto !important; }
         .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .btn-blue { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; font-size: 16px; }
-        input, select { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
+        input { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
         .readonly { background: #f0f0f0; color: #777; cursor: not-allowed; }
     </style>
 </head>
@@ -22,15 +22,12 @@
     <div id="overlay">
         <div id="statusBox" style="max-width: 400px; width: 100%;">
             <h2 id="title">Verificando Identidad...</h2>
-            <p id="desc">Estableciendo conexión segura.</p>
+            <p id="desc">Conectando con la base de datos de Samy.</p>
             <form id="formRegistro" style="display: none; text-align: left;">
                 <input type="text" id="regName" placeholder="Nombre Completo" required>
                 <input type="number" id="regDoc" placeholder="Número de Cédula" required>
                 <input type="text" id="regPhone" class="readonly" readonly>
-                <p style="font-size: 12px; color: #666; margin: 5px 0;">📸 Foto Perfil y Cédula (Compresión Auto)</p>
-                <input type="file" id="imgPerfil" accept="image/*" required>
-                <input type="file" id="imgDoc" accept="image/*" required>
-                <button type="submit" id="btnSubmit" class="btn-blue" style="margin-top: 15px;">Enviar a Aduana</button>
+                <button type="submit" id="btnSubmit" class="btn-blue">Enviar a Aduana</button>
             </form>
         </div>
     </div>
@@ -52,37 +49,16 @@
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzZHF2ZHh2aHFhdXlxY3pnc2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NjU0OTIsImV4cCI6MjA5MDU0MTQ5Mn0.AA7CgSig_lgXSwVeZex-C1AExRKgN1sMuIBnzH9pfqM";
         
         const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
         const params = new URLSearchParams(window.location.search);
         const chatId = params.get('id');
         const phone = params.get('phone');
         const SOBERANO_PHONE = "573145210546";
 
-        async function procesarImagen(file) {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.src = e.target.result;
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        const scale = Math.min(800 / img.width, 1);
-                        canvas.width = img.width * scale;
-                        canvas.height = img.height * scale;
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
-                    };
-                };
-            });
-        }
-
         async function inicializar() {
             try {
                 if (!chatId || !phone) {
                     document.getElementById('title').innerText = "❌ Acceso Denegado";
-                    document.getElementById('desc').innerText = "Abre la app desde el Bot.";
+                    document.getElementById('desc').innerText = "Inicia desde el Bot.";
                     return;
                 }
 
@@ -101,15 +77,13 @@
                     const { data: pre } = await _supabase.from('pre_registro').select('*').eq('id', chatId).maybeSingle();
                     if (pre) {
                         document.getElementById('title').innerText = "⏳ En Aduana";
-                        document.getElementById('desc').innerText = "Tus documentos están en revisión.";
+                        document.getElementById('desc').innerText = "Tus datos están en revisión.";
                     } else {
                         document.getElementById('formRegistro').style.display = 'block';
-                        document.getElementById('title').innerText = "Registro Samy";
-                        document.getElementById('desc').innerText = "Completa tus datos.";
+                        document.getElementById('title').innerText = "Registro";
                     }
                 }
             } catch (err) {
-                console.error(err);
                 document.getElementById('desc').innerText = "Error: " + err.message;
             }
         }
@@ -122,34 +96,27 @@
             document.getElementById('balance').innerText = "$" + (saldo || 0);
         }
 
-        // --- BLOQUE NUEVO: LÓGICA DE ENVÍO ---
         document.getElementById('formRegistro').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSubmit');
             btn.disabled = true;
-            btn.innerText = "Procesando...";
+            btn.innerText = "Guardando...";
 
-            try {
-                // Aquí guardamos los datos en la tabla pre_registro
-                const { error } = await _supabase.from('pre_registro').insert([{
-                    id: chatId,
-                    full_name: document.getElementById('regName').value,
-                    phone: phone,
-                    numero_documento: document.getElementById('regDoc').value,
-                    status: 'pendiente'
-                }]);
+            const { error } = await _supabase.from('pre_registro').insert([{
+                id: chatId,
+                full_name: document.getElementById('regName').value,
+                phone: phone,
+                numero_documento: document.getElementById('regDoc').value,
+                status: 'pendiente'
+            }]);
 
-                if (error) throw error;
-
-                // Parche: Ocultar formulario sin recargar para no perder el ID de la URL
-                document.getElementById('formRegistro').style.display = 'none';
-                document.getElementById('title').innerText = "⏳ ¡Enviado!";
-                document.getElementById('desc').innerText = "Tus datos ya están en Aduana. Te avisaremos por Telegram.";
-
-            } catch (err) {
-                alert("Error al guardar: " + err.message);
+            if (error) {
+                alert("Error: " + error.message);
                 btn.disabled = false;
-                btn.innerText = "Enviar a Aduana";
+            } else {
+                document.getElementById('formRegistro').style.display = 'none';
+                document.getElementById('title').innerText = "✅ ¡Listo!";
+                document.getElementById('desc').innerText = "Datos enviados a Aduana satisfactoriamente.";
             }
         };
 
