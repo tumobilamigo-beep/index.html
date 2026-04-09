@@ -3,25 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro Seguro - Samy</title>
+    <title>Samy - Registro Oficial</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; display: flex; justify-content: center; }
-        .card { background: white; padding: 25px; border-radius: 15px; width: 100%; max-width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #0088cc; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; padding: 20px; display: flex; justify-content: center; }
+        .card { background: white; padding: 30px; border-radius: 20px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #0088cc; margin-bottom: 5px; }
+        p { text-align: center; font-size: 12px; color: #666; margin-bottom: 25px; }
         .field { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
-        select, input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
-        .preview { width: 100%; height: 150px; background: #f9f9f9; border: 2px dashed #ccc; border-radius: 10px; margin-top: 5px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .preview img { width: 100%; height: 100%; object-fit: cover; }
-        .btn { background: #0088cc; color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        .btn:disabled { background: #ccc; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; color: #333; }
+        input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
+        .preview-box { width: 100%; height: 120px; background: #fafafa; border: 2px dashed #ddd; border-radius: 10px; margin-top: 5px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .preview-box img { width: 100%; height: 100%; object-fit: cover; }
+        .btn { background: #0088cc; color: white; border: none; padding: 18px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 25px; font-size: 16px; transition: 0.3s; }
+        .btn:disabled { background: #aaa; cursor: not-allowed; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2>🚀 Samy Registro</h2>
+        <h2>🚀 Registro Samy</h2>
+        <p>Completa tu identidad legal para activar el QR</p>
+        
         <form id="formSamy">
+            <div class="field">
+                <label>Nombre Completo (como en Cédula)</label>
+                <input type="text" id="full_name" placeholder="Ej: Juan Pérez" required>
+            </div>
+
+            <div class="field">
+                <label>Número de Cédula</label>
+                <input type="number" id="numero_documento" placeholder="Sin puntos ni comas" required>
+            </div>
+
             <div class="field">
                 <label>Género Biológico</label>
                 <select id="genero" required>
@@ -29,22 +42,33 @@
                     <option value="Mujer">Mujer</option>
                 </select>
             </div>
+
+            <hr style="border: 0.5px solid #eee; margin: 20px 0;">
+
             <div class="field">
-                <label>Foto Frontal ID</label>
-                <input type="file" id="foto1" accept="image/*" capture="environment" required>
-                <div class="preview" id="p1">Preview</div>
+                <label>👤 Foto de Perfil (Rostro claro)</label>
+                <input type="file" id="foto_p" accept="image/*" capture="user" required onchange="preview(this, 'pP')">
+                <div class="preview-box" id="pP">Vista previa</div>
             </div>
+
             <div class="field">
-                <label>Foto Posterior ID</label>
-                <input type="file" id="foto2" accept="image/*" capture="environment" required>
-                <div class="preview" id="p2">Preview</div>
+                <label>🪪 Cédula Frontal</label>
+                <input type="file" id="foto_f" accept="image/*" capture="environment" required onchange="preview(this, 'pF')">
+                <div class="preview-box" id="pF">Vista previa</div>
             </div>
-            <button type="submit" class="btn" id="subirBtn">Enviar Documentos</button>
+
+            <div class="field">
+                <label>🪪 Cédula Posterior</label>
+                <input type="file" id="foto_t" accept="image/*" capture="environment" required onchange="preview(this, 'pT')">
+                <div class="preview-box" id="pT">Vista previa</div>
+            </div>
+
+            <button type="submit" class="btn" id="subirBtn">Enviar a Revisión Legal</button>
         </form>
     </div>
 
     <script>
-        // CONFIGURACIÓN
+        // CONFIGURACIÓN (Con tus datos de capturas anteriores)
         const SB_URL = "https://fsdqvdxvhqauyqczgsfb.supabase.co";
         const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzZHF2ZHh2aHFhdXlxY3pnc2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NjU0OTIsImV4cCI6MjA5MDU0MTQ5Mn0.AA7CgSig_lgXSwVeZex-C1AExRKgN1sMuIBnzH9pfqM";
         const CLOUD_NAME = "dluwuj6wg";
@@ -53,40 +77,70 @@
         const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
         const userId = new URLSearchParams(window.location.search).get('id');
 
-        // Previsualización
-        document.getElementById('foto1').onchange = e => { document.getElementById('p1').innerHTML = `<img src="${URL.createObjectURL(e.target.files[0])}">`; };
-        document.getElementById('foto2').onchange = e => { document.getElementById('p2').innerHTML = `<img src="${URL.createObjectURL(e.target.files[0])}">`; };
+        // Función de vista previa
+        function preview(input, id) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => document.getElementById(id).innerHTML = `<img src="${e.target.result}">`;
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
 
-        async function subirCloudinary(file) {
+        async function subirACloudinary(file, folder, publicId) {
+            // Regla de oro: Máximo 200kb
+            if (file.size > 205000) throw new Error("La imagen es muy pesada. Máximo 200KB.");
+
             const fd = new FormData();
             fd.append('file', file);
             fd.append('upload_preset', UPLOAD_PRESET);
+            fd.append('folder', folder);
+            fd.append('public_id', publicId);
+
             const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: fd });
             const data = await res.json();
+            if (!data.secure_url) throw new Error("Error al subir a la nube");
             return data.secure_url;
         }
 
         document.getElementById('formSamy').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('subirBtn');
-            btn.disabled = true; btn.innerText = "Subiendo... (Max 200kb)";
+            const cedula = document.getElementById('numero_documento').value;
+
+            if(!userId) return alert("Error: No se detectó ID de Telegram. Abre el link desde el bot.");
+
+            btn.disabled = true;
+            btn.innerText = "Validando y Subiendo...";
 
             try {
-                const url1 = await subirCloudinary(document.getElementById('foto1').files[0]);
-                const url2 = await subirCloudinary(document.getElementById('foto2').files[0]);
+                // 1. Subidas cruzadas a Cloudinary con nombres por cédula
+                const urlPerfil = await subirACloudinary(document.getElementById('foto_p').files[0], "Ima_Profiles", `perfil_${cedula}`);
+                const urlFront = await subirACloudinary(document.getElementById('foto_f').files[0], "Ima_Doc", `doc_frontal_${cedula}`);
+                const urlBack = await subirACloudinary(document.getElementById('foto_t').files[0], "Ima_Doc", `doc_trasero_${cedula}`);
 
-                const { error } = await supabaseClient.from('profiles').update({
-                    genero_biologico: document.getElementById('genero').value,
-                    img_id_frontal: url1,
-                    img_id_posterior: url2,
-                    status: 'en_revision'
-                }).eq('id', userId);
+                // 2. Registro en la "Aduana" (pre_registro)
+                const { error } = await supabaseClient.from('pre_registro').insert([{
+                    id: userId,
+                    full_name: document.getElementById('full_name').value,
+                    numero_documento: cedula,
+                    genero: document.getElementById('genero').value,
+                    foto_perfil_url: urlPerfil,
+                    foto_cedula_frontal_url: urlFront,
+                    foto_cedula_trasera_url: urlBack
+                }]);
 
-                if (error) throw error;
-                alert("¡Documentos enviados! Samy te avisará la aprobación.");
+                if (error) {
+                    if(error.code === '23505') throw new Error("Esta cédula ya está registrada o en proceso.");
+                    throw error;
+                }
+
+                alert("¡Excelente! Documentos en manos del Admin. Samy te notificará por Telegram.");
+                window.close();
+
             } catch (err) {
-                alert("Error: " + err.message);
-                btn.disabled = false; btn.innerText = "Reintentar";
+                alert("Atención: " + err.message);
+                btn.disabled = false;
+                btn.innerText = "Reintentar Envío";
             }
         };
     </script>
