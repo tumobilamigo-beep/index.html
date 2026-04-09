@@ -27,10 +27,10 @@
                 <input type="text" id="regName" placeholder="Nombre Completo" required>
                 <input type="number" id="regDoc" placeholder="Número de Cédula" required>
                 <input type="text" id="regPhone" class="readonly" readonly>
-                <p style="font-size: 12px; color: #666; margin: 5px 0;">📸 Foto Perfil y Cédula (Max 200KB auto)</p>
+                <p style="font-size: 12px; color: #666; margin: 5px 0;">📸 Foto Perfil y Cédula (Compresión Auto)</p>
                 <input type="file" id="imgPerfil" accept="image/*" required>
                 <input type="file" id="imgDoc" accept="image/*" required>
-                <button type="submit" id="btnSubmit" class="btn-blue">Enviar a Aduana</button>
+                <button type="submit" id="btnSubmit" class="btn-blue" style="margin-top: 15px;">Enviar a Aduana</button>
             </form>
         </div>
     </div>
@@ -51,7 +51,6 @@
         const SUPABASE_URL = "https://fsdqvdxvhqauyqczgsfb.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzZHF2ZHh2aHFhdXlxY3pnc2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NjU0OTIsImV4cCI6MjA5MDU0MTQ5Mn0.AA7CgSig_lgXSwVeZex-C1AExRKgN1sMuIBnzH9pfqM";
         
-        // 1. INICIALIZACIÓN SIN CONFLICTOS
         const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const params = new URLSearchParams(window.location.search);
@@ -59,7 +58,6 @@
         const phone = params.get('phone');
         const SOBERANO_PHONE = "573145210546";
 
-        // 2. COMPRESIÓN DE IMÁGENES
         async function procesarImagen(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -80,7 +78,6 @@
             });
         }
 
-        // 3. LÓGICA DE ARRANQUE
         async function inicializar() {
             try {
                 if (!chatId || !phone) {
@@ -124,6 +121,37 @@
             document.getElementById('userStatus').innerText = "Estado: " + status;
             document.getElementById('balance').innerText = "$" + (saldo || 0);
         }
+
+        // --- BLOQUE NUEVO: LÓGICA DE ENVÍO ---
+        document.getElementById('formRegistro').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSubmit');
+            btn.disabled = true;
+            btn.innerText = "Procesando...";
+
+            try {
+                // Aquí guardamos los datos en la tabla pre_registro
+                const { error } = await _supabase.from('pre_registro').insert([{
+                    id: chatId,
+                    full_name: document.getElementById('regName').value,
+                    phone: phone,
+                    numero_documento: document.getElementById('regDoc').value,
+                    status: 'pendiente'
+                }]);
+
+                if (error) throw error;
+
+                // Parche: Ocultar formulario sin recargar para no perder el ID de la URL
+                document.getElementById('formRegistro').style.display = 'none';
+                document.getElementById('title').innerText = "⏳ ¡Enviado!";
+                document.getElementById('desc').innerText = "Tus datos ya están en Aduana. Te avisaremos por Telegram.";
+
+            } catch (err) {
+                alert("Error al guardar: " + err.message);
+                btn.disabled = false;
+                btn.innerText = "Enviar a Aduana";
+            }
+        };
 
         window.onload = inicializar;
     </script>
