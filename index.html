@@ -3,124 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Samy - Plataforma Oficial</title>
+    <title>Samy App</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #0088cc; --gold: #ffcc00; --bg: #f4f7f9; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box; }
-        #mainApp { flex: 1; display: flex; flex-direction: column; padding: 20px; transition: 0.5s; filter: blur(15px); pointer-events: none; }
-        .active-app { filter: blur(0) !important; pointer-events: auto !important; }
-        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        .btn-blue { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; font-size: 16px; }
-        input { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
-        .readonly { background: #f0f0f0; color: #777; cursor: not-allowed; }
+        :root { --primary: #0088cc; --dark: #1d2d35; --gray: #f4f7f9; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--gray); margin: 0; padding: 0; user-select: none; }
+        
+        /* Contenedor Principal */
+        #app { display: flex; flex-direction: column; height: 100vh; max-width: 500px; margin: 0 auto; background: white; position: relative; }
+
+        /* Header */
+        header { padding: 20px; background: white; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
+        .user-info h2 { margin: 0; font-size: 18px; color: var(--dark); }
+        .user-info p { margin: 0; font-size: 12px; color: var(--primary); font-weight: bold; }
+
+        /* Pantallas */
+        .screen { flex: 1; padding: 20px; display: none; overflow-y: auto; }
+        .active { display: block; }
+
+        /* Menú Inferior (Tab Bar) */
+        nav { height: 70px; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; align-items: center; }
+        .nav-item { text-align: center; color: #ccc; cursor: pointer; transition: 0.3s; font-size: 12px; }
+        .nav-item i { font-size: 20px; display: block; margin-bottom: 4px; }
+        .nav-item.active-nav { color: var(--primary); }
+
+        /* Cards y Botones */
+        .card { background: var(--gray); padding: 20px; border-radius: 15px; margin-bottom: 15px; text-align: center; }
+        .btn-main { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .locked { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
+        
+        /* Estilos Registro */
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
-    <div id="overlay">
-        <div id="statusBox" style="max-width: 400px; width: 100%;">
-            <h2 id="title">Verificando Identidad...</h2>
-            <p id="desc">Conectando con la base de datos de Samy.</p>
-            <form id="formRegistro" style="display: none; text-align: left;">
-                <input type="text" id="regName" placeholder="Nombre Completo" required>
-                <input type="number" id="regDoc" placeholder="Número de Cédula" required>
-                <input type="text" id="regPhone" class="readonly" readonly>
-                <button type="submit" id="btnSubmit" class="btn-blue">Enviar a Aduana</button>
-            </form>
+<div id="app">
+    <header>
+        <div class="user-info">
+            <h2 id="userName">Cargando...</h2>
+            <p id="userStatus"><i class="fas fa-circle"></i> Conectando</p>
+        </div>
+        <div id="userBalance" style="font-weight: bold; color: var(--primary); font-size: 20px;">$0</div>
+    </header>
+
+    <div id="screen-register" class="screen">
+        <div id="reg-form">
+            <h3>Bienvenido a Samy</h3>
+            <p>Tu cuenta aún no está activa. Regístrate para ingresar.</p>
+            <input type="text" id="regName" placeholder="Nombre Completo">
+            <input type="number" id="regDoc" placeholder="Cédula">
+            <button class="btn-main" onclick="enviarAduana()">Enviar a Aduana</button>
+        </div>
+        <div id="aduana-msg" style="display:none; text-align: center; margin-top: 50px;">
+            <i class="fas fa-clock fa-3x" style="color: var(--primary);"></i>
+            <h2>Estás en Aduana</h2>
+            <p>El Soberano está revisando tu perfil. Te avisaremos por Telegram cuando seas aprobado.</p>
         </div>
     </div>
 
-    <div id="mainApp">
+    <div id="screen-home" class="screen">
         <div class="card">
-            <h2 id="welcomeUser">Hola</h2>
-            <p id="userStatus">Estado: Verificando...</p>
-            <div id="balance" style="font-size: 32px; font-weight: bold; color: var(--primary);">$0</div>
+            <p>Ubicación actual detectada</p>
+            <div style="height: 200px; background: #e0e0e0; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-map-marker-alt fa-2x" style="color: var(--primary);"></i>
+            </div>
         </div>
-        <div style="flex: 1; background: #dfe6e9; border-radius: 20px; display: flex; align-items: center; justify-content: center; border: 2px dashed #b2bec3;">
-            <span style="color: #636e72;">📍 Mapa de Samy Activo</span>
-        </div>
-        <button class="btn-blue" style="margin-top: 20px;">🚖 Solicitar Servicio</button>
+        <button class="btn-main" id="btnServicio">🚖 Solicitar Samy</button>
     </div>
 
-    <script>
-        const SUPABASE_URL = "https://fsdqvdxvhqauyqczgsfb.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzZHF2ZHh2aHFhdXlxY3pnc2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NjU0OTIsImV4cCI6MjA5MDU0MTQ5Mn0.AA7CgSig_lgXSwVeZex-C1AExRKgN1sMuIBnzH9pfqM";
-        
-        const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        const params = new URLSearchParams(window.location.search);
-        const chatId = params.get('id');
-        const phone = params.get('phone');
-        const SOBERANO_PHONE = "573145210546";
+    <div id="screen-wallet" class="screen">
+        <h3>Mi Billetera</h3>
+        <div class="card">
+            <p>Saldo Disponible</p>
+            <h1 id="walletAmount">$0</h1>
+        </div>
+        <button class="btn-main" style="background: #27ae60;">Recargar Saldo</button>
+    </div>
 
-        async function inicializar() {
-            try {
-                if (!chatId || !phone) {
-                    document.getElementById('title').innerText = "❌ Acceso Denegado";
-                    document.getElementById('desc').innerText = "Inicia desde el Bot.";
-                    return;
-                }
+    <nav id="mainNav">
+        <div class="nav-item active-nav" onclick="changeScreen('home', this)">
+            <i class="fas fa-map"></i>Mapa
+        </div>
+        <div class="nav-item" onclick="changeScreen('wallet', this)" id="nav-wallet">
+            <i class="fas fa-wallet"></i>Billetera
+        </div>
+        <div class="nav-item" onclick="changeScreen('profile', this)">
+            <i class="fas fa-user"></i>Perfil
+        </div>
+    </nav>
+</div>
 
-                document.getElementById('regPhone').value = `+${phone}`;
+<script>
+    const SUPABASE_URL = "https://fsdqvdxvhqauyqczgsfb.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzZHF2ZHh2aHFhdXlxY3pnc2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NjU0OTIsImV4cCI6MjA5MDU0MTQ5Mn0.AA7CgSig_lgXSwVeZex-C1AExRKgN1sMuIBnzH9pfqM";
+    const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-                if (phone === SOBERANO_PHONE) {
-                    activarApp("Soberano Carlos", "Control Total", "Infinito");
-                    return;
-                }
+    const params = new URLSearchParams(window.location.search);
+    const chatId = params.get('id');
+    const phone = params.get('phone');
+    const SOBERANO_PHONE = "573145210546";
 
-                const { data: profile } = await _supabase.from('profiles').select('*').eq('id', chatId).maybeSingle();
-                
-                if (profile) {
-                    activarApp(profile.full_name, "Activo", profile.balance_prepago);
-                } else {
-                    const { data: pre } = await _supabase.from('pre_registro').select('*').eq('id', chatId).maybeSingle();
-                    if (pre) {
-                        document.getElementById('title').innerText = "⏳ En Aduana";
-                        document.getElementById('desc').innerText = "Tus datos están en revisión.";
-                    } else {
-                        document.getElementById('formRegistro').style.display = 'block';
-                        document.getElementById('title').innerText = "Registro";
-                    }
-                }
-            } catch (err) {
-                document.getElementById('desc').innerText = "Error: " + err.message;
-            }
+    async function checkUser() {
+        if (!chatId) return;
+
+        // 1. ¿Es el Soberano?
+        if (phone === SOBERANO_PHONE) {
+            setupUI("Soberano Carlos", "Control Total", "∞", true);
+            return;
         }
 
-        function activarApp(nombre, status, saldo) {
-            document.getElementById('overlay').style.display = 'none';
-            document.getElementById('mainApp').classList.add('active-app');
-            document.getElementById('welcomeUser').innerText = "Hola, " + nombre;
-            document.getElementById('userStatus').innerText = "Estado: " + status;
-            document.getElementById('balance').innerText = "$" + (saldo || 0);
+        // 2. ¿Es usuario activo?
+        const { data: profile } = await _supabase.from('profiles').select('*').eq('id', chatId).maybeSingle();
+        if (profile) {
+            setupUI(profile.full_name, "Usuario Activo", profile.balance_prepago, true);
+            return;
         }
 
-        document.getElementById('formRegistro').onsubmit = async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btnSubmit');
-            btn.disabled = true;
-            btn.innerText = "Guardando...";
+        // 3. ¿Está en aduana?
+        const { data: pre } = await _supabase.from('pre_registro').select('*').eq('id', chatId).maybeSingle();
+        if (pre) {
+            setupUI("Invitado", "En Aduana", "0", false, true);
+        } else {
+            // 4. Nuevo Registro
+            setupUI("Nuevo", "No Registrado", "0", false, false);
+        }
+    }
 
-            const { error } = await _supabase.from('pre_registro').insert([{
-                id: chatId,
-                full_name: document.getElementById('regName').value,
-                phone: phone,
-                numero_documento: document.getElementById('regDoc').value,
-                status: 'pendiente'
-            }]);
+    function setupUI(name, status, balance, isFull, isPending = false) {
+        document.getElementById('userName').innerText = name;
+        document.getElementById('userStatus').innerHTML = `<i class="fas fa-circle" style="color:${isFull?'#27ae60':'#f1c40f'}"></i> ${status}`;
+        document.getElementById('userBalance').innerText = "$" + balance;
+        document.getElementById('walletAmount').innerText = "$" + balance;
 
-            if (error) {
-                alert("Error: " + error.message);
-                btn.disabled = false;
-            } else {
-                document.getElementById('formRegistro').style.display = 'none';
-                document.getElementById('title').innerText = "✅ ¡Listo!";
-                document.getElementById('desc').innerText = "Datos enviados a Aduana satisfactoriamente.";
+        if (isFull) {
+            showScreen('screen-home');
+        } else {
+            showScreen('screen-register');
+            document.getElementById('mainNav').classList.add('locked');
+            if (isPending) {
+                document.getElementById('reg-form').style.display = 'none';
+                document.getElementById('aduana-msg').style.display = 'block';
             }
-        };
+        }
+    }
 
-        window.onload = inicializar;
-    </script>
+    async function enviarAduana() {
+        const name = document.getElementById('regName').value;
+        const doc = document.getElementById('regDoc').value;
+        if(!name || !doc) return alert("Completa los datos");
+
+        const { error } = await _supabase.from('pre_registro').insert([{ 
+            id: chatId, full_name: name, phone: phone, numero_documento: doc, status: 'pendiente' 
+        }]);
+
+        if(!error) checkUser();
+    }
+
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function changeScreen(type, el) {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active-nav'));
+        el.classList.add('active-nav');
+        showScreen('screen-' + type);
+    }
+
+    window.onload = checkUser;
+</script>
 </body>
 </html>
