@@ -273,36 +273,21 @@
         }
     }
 
-// TELEGRAM REFORZADO CON DIAGNÓSTICO
-    async function enviarTelegram(destId, mensaje) {
-        const token = "8687171118:AAEwiLxW7phPsI60kfElkensmfq-w7AOu_A";
-        const finalId = Number(destId); 
-        console.log("Intentando enviar mensaje a:", finalId); // Para depurar en consola
-        
-        try {
-            const resp = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ 
-                    chat_id: finalId, 
-                    text: mensaje, 
-                    parse_mode: 'Markdown' 
-                })
-            });
-            
-            const r = await resp.json();
-            
-            if (!r.ok) {
-                console.error("Error detallado de Telegram:", r.description);
-                alert("Telegram dice: " + r.description);
-            } else {
-                console.log("✅ Mensaje enviado con éxito a Telegram");
-            }
-        } catch(e) { 
-            console.error("Fallo crítico de red o fetch:", e);
-            alert("Error de conexión: No se pudo contactar con los servidores de Telegram.");
-        }
-    }
+async function enviarTelegram(destId, mensaje) {
+    // Reemplaza con tu nuevo token verificado
+    const token = "8687171118:AAEwiLxW7PhPsl60kfElkensmfq-w7AOu_A"; 
+    try {
+        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ 
+                chat_id: Number(destId), 
+                text: mensaje, 
+                parse_mode: 'Markdown' 
+            })
+        });
+    } catch(e) { console.error("Error Telegram:", e); }
+}
 
 async function aprobarUsuario(targetId, nombre, tel) {
     // 1. Intentar insertar en profiles PRIMERO
