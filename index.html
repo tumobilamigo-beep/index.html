@@ -189,25 +189,35 @@
         }
     }
 
-    // 2. LA MAGIA: SUSCRIPCIÓN EN TIEMPO REAL
-    function suscribirCambios() {
-        // Escuchar si alguien entra o sale de la Aduana (Para el Soberano)
-        _supabase
-            .channel('cambios-aduana')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'pre_registro' }, () => {
-                if (phone === SOBERANO_PHONE) cargarSolicitudesAduana();
-                else verificarEstado();
-            })
-            .subscribe();
+function suscribirCambios() {
+    // Escuchar TODO en la tabla profiles (especialmente cambios de nombre/saldo)
+    _supabase
+        .channel('cambios-perfil')
+        .on('postgres_changes', 
+            { 
+                event: '*', // Escucha INSERT, UPDATE y DELETE
+                schema: 'public', 
+                table: 'profiles', 
+                filter: `id=eq.${chatId}` 
+            }, 
+            (payload) => {
+                console.log("Cambio detectado en perfil:", payload);
+                verificarEstado(); // Recarga la UI automáticamente
+            }
+        )
+        .subscribe();
 
-        // Escuchar si el usuario es creado en Profiles (Para que el Usuario entre a la App solo)
-        _supabase
-            .channel('cambios-perfil')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'profiles', filter: `id=eq.${chatId}` }, () => {
-                verificarEstado(); // El usuario detecta que ya tiene perfil y se activa
-            })
-            .subscribe();
-    }
+    // Escuchar cambios en la Aduana (Para el Soberano)
+    _supabase
+        .channel('cambios-aduana')
+        .on('postgres_changes', 
+            { event: '*', schema: 'public', table: 'pre_registro' }, 
+            () => {
+                if (phone === SOBERANO_PHONE) cargarSolicitudesAduana();
+            }
+        )
+        .subscribe();
+}
 
     // --- FUNCIONES DE INTERFAZ (IGUALES A LAS ANTERIORES) ---
 
