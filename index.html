@@ -3,95 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Samy App</title>
+    <title>Samy App - Soberano Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #0088cc; --dark: #1d2d35; --gray: #f4f7f9; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--gray); margin: 0; padding: 0; user-select: none; }
-        
-        /* Contenedor Principal */
-        #app { display: flex; flex-direction: column; height: 100vh; max-width: 500px; margin: 0 auto; background: white; position: relative; }
-
-        /* Header */
-        header { padding: 20px; background: white; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
-        .user-info h2 { margin: 0; font-size: 18px; color: var(--dark); }
-        .user-info p { margin: 0; font-size: 12px; color: var(--primary); font-weight: bold; }
-
-        /* Pantallas */
-        .screen { flex: 1; padding: 20px; display: none; overflow-y: auto; }
+        :root { --primary: #0088cc; --dark: #1d2d35; --gray: #f4f7f9; --success: #27ae60; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--gray); margin: 0; padding: 0; }
+        #app { max-width: 500px; margin: 0 auto; background: white; min-height: 100vh; display: flex; flex-direction: column; }
+        header { padding: 20px; background: white; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
+        .screen { flex: 1; padding: 20px; display: none; }
         .active { display: block; }
-
-        /* Menú Inferior (Tab Bar) */
-        nav { height: 70px; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; align-items: center; }
-        .nav-item { text-align: center; color: #ccc; cursor: pointer; transition: 0.3s; font-size: 12px; }
+        .card { background: var(--gray); padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #e0e0e0; }
+        .btn-main { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; }
+        .btn-approve { background: var(--success); color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
+        nav { height: 70px; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; align-items: center; position: sticky; bottom: 0; }
+        .nav-item { text-align: center; color: #ccc; cursor: pointer; font-size: 12px; }
         .nav-item i { font-size: 20px; display: block; margin-bottom: 4px; }
         .nav-item.active-nav { color: var(--primary); }
-
-        /* Cards y Botones */
-        .card { background: var(--gray); padding: 20px; border-radius: 15px; margin-bottom: 15px; text-align: center; }
-        .btn-main { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; font-size: 16px; cursor: pointer; }
-        .locked { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
-        
-        /* Estilos Registro */
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
+        .badge { background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; position: absolute; }
     </style>
 </head>
 <body>
 
 <div id="app">
     <header>
-        <div class="user-info">
-            <h2 id="userName">Cargando...</h2>
-            <p id="userStatus"><i class="fas fa-circle"></i> Conectando</p>
+        <div>
+            <h2 id="userName" style="margin:0; font-size: 16px;">Cargando...</h2>
+            <p id="userStatus" style="margin:0; font-size: 11px; color: var(--primary);">Verificando...</p>
         </div>
-        <div id="userBalance" style="font-weight: bold; color: var(--primary); font-size: 20px;">$0</div>
+        <div id="userBalance" style="font-weight: bold; color: var(--primary); font-size: 18px;">$0</div>
     </header>
 
     <div id="screen-register" class="screen">
-        <div id="reg-form">
-            <h3>Bienvenido a Samy</h3>
-            <p>Tu cuenta aún no está activa. Regístrate para ingresar.</p>
-            <input type="text" id="regName" placeholder="Nombre Completo">
-            <input type="number" id="regDoc" placeholder="Cédula">
-            <button class="btn-main" onclick="enviarAduana()">Enviar a Aduana</button>
-        </div>
-        <div id="aduana-msg" style="display:none; text-align: center; margin-top: 50px;">
-            <i class="fas fa-clock fa-3x" style="color: var(--primary);"></i>
-            <h2>Estás en Aduana</h2>
-            <p>El Soberano está revisando tu perfil. Te avisaremos por Telegram cuando seas aprobado.</p>
+        <div id="aduana-msg" style="text-align: center; margin-top: 50px;">
+            <i class="fas fa-passport fa-4x" style="color: var(--primary); margin-bottom: 20px;"></i>
+            <h2>Identidad en Validación</h2>
+            <p>Tus datos están en la Aduana de Samy. El Soberano te dará acceso pronto.</p>
         </div>
     </div>
 
     <div id="screen-home" class="screen">
-        <div class="card">
-            <p>Ubicación actual detectada</p>
-            <div style="height: 200px; background: #e0e0e0; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                <i class="fas fa-map-marker-alt fa-2x" style="color: var(--primary);"></i>
+        <div class="card" style="height: 250px; display: flex; align-items: center; justify-content: center;">
+            <div style="text-align: center;">
+                <i class="fas fa-map-marked-alt fa-3x" style="color: #bdc3c7;"></i>
+                <p>Ubicación actual detectada</p>
             </div>
         </div>
-        <button class="btn-main" id="btnServicio">🚖 Solicitar Samy</button>
+        <button class="btn-main"><i class="fas fa-taxi"></i> Solicitar Servicio</button>
+    </div>
+
+    <div id="screen-aduana" class="screen">
+        <h3><i class="fas fa-users-cog"></i> Gestión de Aspirantes</h3>
+        <div id="lista-aduana">
+            <p style="text-align: center; color: #999;">No hay solicitudes pendientes.</p>
+        </div>
     </div>
 
     <div id="screen-wallet" class="screen">
         <h3>Mi Billetera</h3>
-        <div class="card">
-            <p>Saldo Disponible</p>
-            <h1 id="walletAmount">$0</h1>
+        <div class="card" style="background: var(--primary); color: white;">
+            <p style="margin:0;">Saldo Disponible</p>
+            <h1 id="walletAmount" style="margin:5px 0;">$0</h1>
         </div>
-        <button class="btn-main" style="background: #27ae60;">Recargar Saldo</button>
     </div>
 
     <nav id="mainNav">
-        <div class="nav-item active-nav" onclick="changeScreen('home', this)">
-            <i class="fas fa-map"></i>Mapa
+        <div class="nav-item active-nav" onclick="changeScreen('home', this)"><i class="fas fa-map"></i>Mapa</div>
+        <div id="nav-aduana-btn" class="nav-item" style="display:none;" onclick="changeScreen('aduana', this)">
+            <i class="fas fa-shield-alt"></i>Aduana <span id="count-badge" class="badge" style="display:none;">0</span>
         </div>
-        <div class="nav-item" onclick="changeScreen('wallet', this)" id="nav-wallet">
-            <i class="fas fa-wallet"></i>Billetera
-        </div>
-        <div class="nav-item" onclick="changeScreen('profile', this)">
-            <i class="fas fa-user"></i>Perfil
-        </div>
+        <div class="nav-item" onclick="changeScreen('wallet', this)"><i class="fas fa-wallet"></i>Billetera</div>
+        <div class="nav-item" onclick="changeScreen('profile', this)"><i class="fas fa-user"></i>Perfil</div>
     </nav>
 </div>
 
@@ -101,64 +83,73 @@
     const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const params = new URLSearchParams(window.location.search);
-    const chatId = params.get('id');
-    const phone = params.get('phone');
+    const chatId = params.get('id') || "INVITADO";
+    const phone = params.get('phone') || "000";
     const SOBERANO_PHONE = "573145210546";
 
-    async function checkUser() {
-        if (!chatId) return;
-
-        // 1. ¿Es el Soberano?
+    async function init() {
         if (phone === SOBERANO_PHONE) {
-            setupUI("Soberano Carlos", "Control Total", "∞", true);
-            return;
-        }
-
-        // 2. ¿Es usuario activo?
-        const { data: profile } = await _supabase.from('profiles').select('*').eq('id', chatId).maybeSingle();
-        if (profile) {
-            setupUI(profile.full_name, "Usuario Activo", profile.balance_prepago, true);
-            return;
-        }
-
-        // 3. ¿Está en aduana?
-        const { data: pre } = await _supabase.from('pre_registro').select('*').eq('id', chatId).maybeSingle();
-        if (pre) {
-            setupUI("Invitado", "En Aduana", "0", false, true);
+            setupUI("Carlos Albeiro Troncoso Pulido Soberano", "Control Total", "∞", true, true);
+            cargarSolicitudesAduana();
         } else {
-            // 4. Nuevo Registro
-            setupUI("Nuevo", "No Registrado", "0", false, false);
-        }
-    }
-
-    function setupUI(name, status, balance, isFull, isPending = false) {
-        document.getElementById('userName').innerText = name;
-        document.getElementById('userStatus').innerHTML = `<i class="fas fa-circle" style="color:${isFull?'#27ae60':'#f1c40f'}"></i> ${status}`;
-        document.getElementById('userBalance').innerText = "$" + balance;
-        document.getElementById('walletAmount').innerText = "$" + balance;
-
-        if (isFull) {
-            showScreen('screen-home');
-        } else {
-            showScreen('screen-register');
-            document.getElementById('mainNav').classList.add('locked');
-            if (isPending) {
-                document.getElementById('reg-form').style.display = 'none';
-                document.getElementById('aduana-msg').style.display = 'block';
+            const { data: profile } = await _supabase.from('profiles').select('*').eq('id', chatId).maybeSingle();
+            if (profile) {
+                setupUI(profile.full_name, "Usuario Activo", profile.balance_prepago, true, false);
+            } else {
+                setupUI("Invitado", "En Aduana", "0", false, false);
             }
         }
     }
 
-    async function enviarAduana() {
-        const name = document.getElementById('regName').value;
-        const doc = document.getElementById('regDoc').value;
-        if(!name || !doc) return alert("Completa los datos");
+    function setupUI(name, status, balance, active, isSoberano) {
+        document.getElementById('userName').innerText = name;
+        document.getElementById('userStatus').innerText = status;
+        document.getElementById('userBalance').innerText = "$" + balance;
+        document.getElementById('walletAmount').innerText = "$" + balance;
 
-        const { error } = await _supabase.from('pre_registro').insert([{ 
-            id: chatId, full_name: name, phone: phone, numero_documento: doc, status: 'pendiente' 
-        }]);
+        if (isSoberano) {
+            document.getElementById('nav-aduana-btn').style.display = 'block';
+        }
 
-        if(!error) checkUser();
+        if (active) {
+            showScreen('screen-home');
+        } else {
+            showScreen('screen-register');
+            document.getElementById('mainNav').style.opacity = "0.5";
+            document.getElementById('mainNav').style.pointerEvents = "none";
+        }
+    }
+
+    async function cargarSolicitudesAduana() {
+        const { data, error } = await _supabase.from('pre_registro').select('*').eq('status', 'pendiente');
+        const container = document.getElementById('lista-aduana');
+        if (data && data.length > 0) {
+            document.getElementById('count-badge').innerText = data.length;
+            document.getElementById('count-badge').style.display = 'inline';
+            container.innerHTML = data.map(user => `
+                <div class="card" style="text-align: left;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <strong style="display:block;">${user.full_name}</strong>
+                            <small>CC: ${user.numero_documento} | Tel: ${user.phone}</small>
+                        </div>
+                        <button class="btn-approve" onclick="aprobarUsuario('${user.id}', '${user.full_name}', '${user.phone}')">Aprobar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+
+    async function aprobarUsuario(id, nombre, tel) {
+        // 1. Crear perfil real
+        const { error: err1 } = await _supabase.from('profiles').insert([{ id: id, full_name: nombre, phone: tel, balance_prepago: 0 }]);
+        // 2. Marcar como aprobado en pre_registro
+        const { error: err2 } = await _supabase.from('pre_registro').update({ status: 'aprobado' }).eq('id', id);
+        
+        if (!err1 && !err2) {
+            alert("Usuario aprobado con éxito.");
+            cargarSolicitudesAduana();
+        }
     }
 
     function showScreen(id) {
@@ -172,7 +163,7 @@
         showScreen('screen-' + type);
     }
 
-    window.onload = checkUser;
+    init();
 </script>
 </body>
 </html>
