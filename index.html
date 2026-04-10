@@ -273,19 +273,35 @@
         }
     }
 
-    // TELEGRAM REFORZADO CON ALERTAS
+// TELEGRAM REFORZADO CON DIAGNÓSTICO
     async function enviarTelegram(destId, mensaje) {
         const token = "7547466540:AAEYm7Z9_NIdl-O2R0Gsh8pQitE26U_5A4A";
         const finalId = Number(destId); 
+        console.log("Intentando enviar mensaje a:", finalId); // Para depurar en consola
+        
         try {
             const resp = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ chat_id: finalId, text: mensaje, parse_mode: 'Markdown' })
+                body: JSON.stringify({ 
+                    chat_id: finalId, 
+                    text: mensaje, 
+                    parse_mode: 'Markdown' 
+                })
             });
+            
             const r = await resp.json();
-            if (!r.ok) alert("Telegram no pudo enviar mensaje: " + r.description);
-        } catch(e) { alert("Error de conexión con Telegram"); }
+            
+            if (!r.ok) {
+                console.error("Error detallado de Telegram:", r.description);
+                alert("Telegram dice: " + r.description);
+            } else {
+                console.log("✅ Mensaje enviado con éxito a Telegram");
+            }
+        } catch(e) { 
+            console.error("Fallo crítico de red o fetch:", e);
+            alert("Error de conexión: No se pudo contactar con los servidores de Telegram.");
+        }
     }
 
     async function aprobarUsuario(targetId, nombre, tel) {
