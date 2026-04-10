@@ -155,14 +155,36 @@
     }
 
     async function aprobarUsuario(id, nombre, tel) {
-        const { error: err1 } = await _supabase.from('profiles').insert([{ id: id, full_name: nombre, phone: tel, balance_prepago: 0 }]);
-        const { error: err2 } = await _supabase.from('pre_registro').update({ status: 'aprobado' }).eq('id', id);
-        
-        if (!err1 && !err2) {
-            alert("✅ Usuario aprobado con éxito.");
-            cargarSolicitudesAduana();
-        }
+    // 1. Crear el perfil real en la tabla 'profiles'
+    const { error: errPerfil } = await _supabase
+        .from('profiles')
+        .insert([{ 
+            id: id, 
+            full_name: nombre, 
+            phone: tel, 
+            balance_prepago: 0 
+        }]);
+
+    if (errPerfil) {
+        console.error("Error creando perfil:", errPerfil);
+        alert("Hubo un problema al crear el perfil real.");
+        return; // Detenemos si no se pudo crear el perfil
     }
+
+    // 2. Eliminar definitivamente de 'pre_registro' para limpiar la lista
+    const { error: errBorrado } = await _supabase
+        .from('pre_registro')
+        .delete()
+        .eq('id', id);
+
+    if (!errBorrado) {
+        alert("✅ Usuario aprobado y aduana despejada.");
+        cargarSolicitudesAduana(); // Refresca la lista automáticamente
+    } else {
+        console.error("Error al borrar de aduana:", errBorrado);
+        alert("Perfil creado, pero el registro de aduana no se pudo borrar.");
+    }
+}
 
     function showScreen(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
