@@ -156,11 +156,17 @@
     const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const params = new URLSearchParams(window.location.search);
-    const chatId = params.get('id');
-    const phone = params.get('phone');
+    const chatId = params.get('id') || "DESCONOCIDO";
+    const phone = params.get('phone') || "000";
     const SOBERANO_PHONE = "573145210546";
 
     async function init() {
+        await verificarEstado(); // Primera carga
+        suscribirCambios();     // Activar escucha en tiempo real
+    }
+
+    // 1. FUNCIÓN CENTRAL DE VERIFICACIÓN
+    async function verificarEstado() {
         if (phone === SOBERANO_PHONE) {
             setupUI("Carlos Albeiro Troncoso Pulido", "Soberano", "∞", true, true);
             cargarSolicitudesAduana();
@@ -173,13 +179,37 @@
                 if (pre) {
                     setupUI("Invitado", "En Aduana", "0", false, false);
                     document.getElementById('aduana-msg').style.display = 'block';
+                    document.getElementById('form-registro').style.display = 'none';
                 } else {
-                    setupUI("Nuevo", "Registro", "0", false, false);
+                    setupUI("Nuevo Usuario", "Registro Requerido", "0", false, false);
                     document.getElementById('form-registro').style.display = 'block';
+                    document.getElementById('aduana-msg').style.display = 'none';
                 }
             }
         }
     }
+
+    // 2. LA MAGIA: SUSCRIPCIÓN EN TIEMPO REAL
+    function suscribirCambios() {
+        // Escuchar si alguien entra o sale de la Aduana (Para el Soberano)
+        _supabase
+            .channel('cambios-aduana')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'pre_registro' }, () => {
+                if (phone === SOBERANO_PHONE) cargarSolicitudesAduana();
+                else verificarEstado();
+            })
+            .subscribe();
+
+        // Escuchar si el usuario es creado en Profiles (Para que el Usuario entre a la App solo)
+        _supabase
+            .channel('cambios-perfil')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'profiles', filter: `id=eq.${chatId}` }, () => {
+                verificarEstado(); // El usuario detecta que ya tiene perfil y se activa
+            })
+            .subscribe();
+    }
+
+    // --- FUNCIONES DE INTERFAZ (IGUALES A LAS ANTERIORES) ---
 
     function setupUI(name, status, balance, active, isSoberano) {
         document.getElementById('userName').innerText = name;
@@ -188,8 +218,11 @@
         document.getElementById('walletAmount').innerText = balance === "∞" ? "∞" : "$" + balance;
 
         if (isSoberano) document.getElementById('nav-aduana-btn').style.display = 'block';
+        
         if (active) {
             showScreen('screen-home');
+            document.getElementById('mainNav').style.opacity = "1";
+            document.getElementById('mainNav').style.pointerEvents = "auto";
         } else {
             showScreen('screen-register');
             document.getElementById('mainNav').style.opacity = "0.3";
@@ -205,9 +238,7 @@
         const { error } = await _supabase.from('pre_registro').insert([{ 
             id: chatId, full_name: nombre, phone: phone, numero_documento: doc, status: 'pendiente' 
         }]);
-
-        if (!error) location.reload();
-        else alert("Error: " + error.message);
+        if (error) alert("Error: " + error.message);
     }
 
     async function cargarSolicitudesAduana() {
@@ -218,13 +249,16 @@
             document.getElementById('count-badge').style.display = 'inline';
             container.innerHTML = data.map(user => `
                 <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                    <div><strong>${user.full_name}</strong><br><small>${user.phone}</small></div>
+                    <div><strong>${user.full_name}</strong><br><small>CC: ${user.numero_documento}</small></div>
                     <div style="display:flex; gap:10px;">
-                        <button onclick="aprobarUsuario('${user.id}','${user.full_name}','${user.phone}')" style="color:var(--success); border:none; background:none; font-size:20px;"><i class="fas fa-check-circle"></i></button>
-                        <button onclick="rechazarUsuario('${user.id}','${user.full_name}')" style="color:var(--danger); border:none; background:none; font-size:20px;"><i class="fas fa-times-circle"></i></button>
+                        <button onclick="aprobarUsuario('${user.id}','${user.full_name}','${user.phone}')" style="color:#27ae60; border:none; background:none; font-size:24px;"><i class="fas fa-circle-check"></i></button>
+                        <button onclick="rechazarUsuario('${user.id}')" style="color:#e74c3c; border:none; background:none; font-size:24px;"><i class="fas fa-circle-xmark"></i></button>
                     </div>
                 </div>
             `).join('');
+        } else {
+            document.getElementById('count-badge').style.display = 'none';
+            container.innerHTML = `<p style="text-align:center; color:#94a3b8; margin-top:50px;">Aduana despejada.</p>`;
         }
     }
 
@@ -233,7 +267,7 @@
         await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({chat_id: id, text: msj, parse_mode: 'Markdown'})
+            body: JSON.stringify({ chat_id: id, text: msj, parse_mode: 'Markdown' })
         });
     }
 
@@ -241,16 +275,14 @@
         const { error: err1 } = await _supabase.from('profiles').insert([{ id, full_name: nombre, phone: tel, balance_prepago: 0 }]);
         if (!err1) {
             await _supabase.from('pre_registro').delete().eq('id', id);
-            await enviarTelegram(id, `🌟 *¡Bienvenido!* \nEl Soberano ha aprobado tu ingreso. Ya puedes usar Samy App.`);
-            alert("Aprobado"); cargarSolicitudesAduana();
+            await enviarTelegram(id, `🌟 *¡Aprobado!* \nYa puedes usar Samy App.`);
         }
     }
 
-    async function rechazarUsuario(id, nombre) {
-        if (confirm(`¿Rechazar a ${nombre}?`)) {
+    async function rechazarUsuario(id) {
+        if (confirm("¿Rechazar aspirante?")) {
             await _supabase.from('pre_registro').delete().eq('id', id);
-            await enviarTelegram(id, `🚫 *Acceso denegado* \nLo sentimos, no has sido aprobado.`);
-            alert("Rechazado"); cargarSolicitudesAduana();
+            await enviarTelegram(id, `🚫 *Acceso denegado*`);
         }
     }
 
