@@ -142,15 +142,25 @@
         if (data && data.length > 0) {
             document.getElementById('count-badge').innerText = data.length;
             document.getElementById('count-badge').style.display = 'inline';
-            container.innerHTML = data.map(user => `
-                <div class="card" style="text-align: left; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <strong style="display:block; font-size: 15px;">${user.full_name}</strong>
-                        <p style="margin: 3px 0 0; font-size: 11px; color: var(--text-light);">CC: ${user.numero_documento} • Tel: ${user.phone}</p>
-                    </div>
-                    <button class="btn-approve" onclick="aprobarUsuario('${user.id}', '${user.full_name}', '${user.phone}')">Aprobar</button>
-                </div>
-            `).join('');
+           // Dentro de cargarSolicitudesAduana, cambia el mapeo del HTML:
+container.innerHTML = data.map(user => `
+    <div class="card" style="text-align: left;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <strong style="display:block;">${user.full_name}</strong>
+                <small>CC: ${user.numero_documento} | Tel: ${user.phone}</small>
+            </div>
+            <div style="display:flex; gap: 5px;">
+                <button class="btn-approve" onclick="aprobarUsuario('${user.id}', '${user.full_name}', '${user.phone}')">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button class="btn-approve" style="background:#e74c3c;" onclick="rechazarUsuario('${user.id}', '${user.full_name}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+`).join('');
         }
     }
 
