@@ -304,19 +304,27 @@
         }
     }
 
-    async function aprobarUsuario(targetId, nombre, tel) {
-        const { error: err1 } = await _supabase.from('profiles').insert([{ 
-            id: targetId, full_name: nombre, phone: tel, balance_prepago: 0 
-        }]);
+async function aprobarUsuario(targetId, nombre, tel) {
+    // 1. Intentar insertar en profiles PRIMERO
+    const { error: err1 } = await _supabase.from('profiles').insert([{ 
+        id: targetId, full_name: nombre, phone: tel, balance_prepago: 0 
+    }]);
 
-        if (!err1) {
-            await enviarTelegram(targetId, `🌟 *¡Aprobado!* \nHola ${nombre}, el Soberano ha autorizado tu ingreso.`);
-            await _supabase.from('pre_registro').delete().eq('id', targetId);
-            alert("Usuario aprobado con éxito.");
-        } else {
-            alert("Error al crear perfil: " + err1.message);
-        }
+    if (!err1) {
+        // 2. Si el perfil se creó, enviar mensaje
+        // Usamos await para asegurar que se intente enviar antes de borrar el registro previo
+        await enviarTelegram(targetId, `🌟 *¡Aprobado!* \nHola ${nombre}, el Soberano ha autorizado tu ingreso.`);
+        
+        // 3. Por último, borrar de la aduana
+        await _supabase.from('pre_registro').delete().eq('id', targetId);
+        
+        alert("¡Usuario aprobado y notificado!");
+    } else {
+        // Si sale "Unauthorized" aquí, es por el Paso 1 de esta guía
+        console.error("Error de Supabase:", err1);
+        alert("Error de autorización: Revisa las políticas RLS en Supabase.");
     }
+}
 
     async function rechazarUsuario(targetId) {
         if (confirm("¿Soberano, desea rechazar este aspirante?")) {
