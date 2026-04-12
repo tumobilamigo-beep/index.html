@@ -2,10 +2,13 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Samy App - Royale Edition</title>
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
         :root { 
             --primary: #0088cc; 
@@ -14,6 +17,7 @@
             --glass: rgba(255, 255, 255, 0.9);
             --success: #27ae60;
             --danger: #e74c3c;
+            --warning: #f1c40f;
         }
 
         body { 
@@ -32,17 +36,18 @@
         }
 
         header { 
-            padding: 20px; background: white; 
+            padding: 15px 20px; background: white; 
             display: flex; justify-content: space-between; align-items: center; 
             border-bottom: 1px solid rgba(0,0,0,0.05); 
             position: sticky; top: 0; z-index: 100;
         }
+
         .user-info h2 { margin: 0; font-size: 14px; font-weight: 700; color: var(--dark); }
         .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
 
-        .screen { flex: 1; padding: 25px; display: none; overflow-y: auto; animation: fadeIn 0.4s ease; }
+        .screen { flex: 1; padding: 25px; display: none; overflow-y: auto; animation: fadeIn 0.3s ease-out; }
         .active { display: block !important; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
         .card { 
             background: white; padding: 20px; border-radius: 20px; 
@@ -54,9 +59,9 @@
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
             color: white; border: none; padding: 18px; border-radius: 16px; 
             width: 100%; font-weight: bold; cursor: pointer; font-size: 16px;
-            box-shadow: 0 10px 20px rgba(0,136,204,0.2); transition: 0.3s;
+            box-shadow: 0 10px 20px rgba(0,136,204,0.2); transition: 0.2s;
         }
-        .btn-main:active { transform: scale(0.96); }
+        .btn-main:active { transform: scale(0.97); opacity: 0.9; }
 
         input { 
             width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; 
@@ -64,16 +69,18 @@
         }
 
         nav { 
-            height: 80px; background: rgba(255,255,255,0.8); 
-            backdrop-filter: blur(10px); border-top: 1px solid rgba(0,0,0,0.05);
+            height: 75px; background: white; 
+            border-top: 1px solid rgba(0,0,0,0.05);
             display: flex; justify-content: space-around; align-items: center;
+            padding-bottom: env(safe-area-inset-bottom);
         }
-        .nav-item { text-align: center; color: #94a3b8; cursor: pointer; font-size: 11px; position: relative; }
-        .nav-item i { font-size: 22px; display: block; margin-bottom: 4px; }
+        .nav-item { text-align: center; color: #94a3b8; cursor: pointer; font-size: 11px; position: relative; transition: 0.2s; }
+        .nav-item i { font-size: 20px; display: block; margin-bottom: 4px; }
         .nav-item.active-nav { color: var(--primary); }
         .badge { 
             background: var(--danger); color: white; border-radius: 10px; 
-            padding: 2px 6px; font-size: 10px; position: absolute; top: -5px; right: -10px;
+            padding: 2px 6px; font-size: 10px; position: absolute; top: -5px; right: -8px;
+            border: 2px solid white;
         }
 
         .wallet-card {
@@ -88,7 +95,9 @@
     <header>
         <div class="user-info">
             <h2 id="userName">Samy App</h2>
-            <p id="userStatus" style="margin:0; font-size: 11px;"><span id="statusDot" class="status-dot" style="background: #94a3b8;"></span> Verificando...</p>
+            <p id="userStatus" style="margin:0; font-size: 11px;">
+                <span id="statusDot" class="status-dot" style="background: #94a3b8;"></span> Conectando...
+            </p>
         </div>
         <div id="userBalance" style="font-weight: 800; color: var(--primary); font-size: 20px;">$0</div>
     </header>
@@ -98,7 +107,7 @@
             <div style="text-align: center; margin-bottom: 30px;">
                 <i class="fas fa-id-card fa-3x" style="color: var(--primary);"></i>
                 <h2>Registro de Acceso</h2>
-                <p style="color: #64748b;">Completa tus datos para que el Soberano autorice tu ingreso.</p>
+                <p style="color: #64748b;">El Soberano requiere tus credenciales para autorizar el ingreso.</p>
             </div>
             <input type="text" id="regName" placeholder="Nombre Completo">
             <input type="number" id="regDoc" placeholder="Número de Documento">
@@ -106,41 +115,45 @@
         </div>
 
         <div id="aduana-msg" style="display:none; text-align: center; margin-top: 50px;">
-            <i class="fas fa-passport fa-4x" style="color: var(--primary); margin-bottom: 20px;"></i>
-            <h2>Identidad en Validación</h2>
-            <p style="color: #64748b;">Tus datos están en la Aduana de Samy. El Soberano Carlos revisará tu perfil pronto.</p>
-            <p id="msg-feedback" style="color: var(--success); font-size: 13px; margin-top: 20px; display: none;">¡Registro enviado con éxito!</p>
+            <i class="fas fa-passport fa-4x" style="color: var(--warning); margin-bottom: 20px;"></i>
+            <h2>En Aduana</h2>
+            <p style="color: #64748b;">Tu perfil está siendo revisado por el Soberano Carlos.</p>
+            <div class="card" style="background: #fffbeb; border-color: #fef3c7; margin-top: 20px;">
+                <small style="color: #b45309;">Espera la notificación en Telegram para acceder.</small>
+            </div>
         </div>
     </div>
 
     <div id="screen-home" class="screen">
-        <div class="card" style="height: 280px; display: flex; align-items: center; justify-content: center; background: #f1f5f9;">
+        <div class="card" style="height: 250px; display: flex; align-items: center; justify-content: center; background: #f1f5f9; border-style: dashed;">
             <div style="text-align: center; color: #94a3b8;">
-                <i class="fas fa-location-crosshairs fa-3x"></i>
-                <p>Detectando ubicación...</p>
+                <i class="fas fa-location-dot fa-3x" style="margin-bottom: 10px;"></i>
+                <p>Servicios disponibles en tu zona</p>
             </div>
         </div>
-        <button class="btn-main"><i class="fas fa-paper-plane"></i> Solicitar Servicio</button>
+        <button class="btn-main" onclick="tgHaptic()"><i class="fas fa-paper-plane"></i> Solicitar Servicio</button>
     </div>
 
     <div id="screen-aduana" class="screen">
-        <h3><i class="fas fa-shield-halved"></i> Gestión de Aduana</h3>
+        <h3><i class="fas fa-shield-halved"></i> Control de Aduana</h3>
         <div id="lista-aduana"></div>
     </div>
 
     <div id="screen-wallet" class="screen">
         <div class="wallet-card">
-            <p style="opacity: 0.7; font-size: 14px;">Saldo Disponible</p>
+            <p style="opacity: 0.7; font-size: 14px;">Saldo Prepago</p>
             <h1 id="walletAmount" style="font-size: 42px; margin: 10px 0;">$0</h1>
-            <i class="fas fa-wallet" style="opacity: 0.2; font-size: 50px;"></i>
+            <button style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 15px; border-radius: 10px; font-size: 12px;">Recargar Saldo</button>
         </div>
     </div>
 
     <div id="screen-profile" class="screen">
         <div class="card">
-            <h3>Información de Cuenta</h3>
-            <p><strong>ID de Telegram:</strong> <span id="debugId">Cargando...</span></p>
-            <p><strong>Teléfono:</strong> <span id="debugPhone">Cargando...</span></p>
+            <h3 style="margin-top:0">Mi Perfil</h3>
+            <p><strong>Telegram ID:</strong> <span id="debugId">...</span></p>
+            <p><strong>Teléfono:</strong> <span id="debugPhone">...</span></p>
+            <hr style="border: 0; border-top: 1px solid #eee;">
+            <small style="color: #94a3b8;">Versión 2.0.1 - TeleStack Engine</small>
         </div>
     </div>
 
@@ -155,20 +168,26 @@
 </div>
 
 <script>
+    // CONFIGURACIÓN E INICIALIZACIÓN
+    const tg = window.Telegram.WebApp;
     const SUPABASE_URL = "https://fsdqvdxvhqauyqczgsfb.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzZHF2ZHh2aHFhdXlxY3pnc2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NjU0OTIsImV4cCI6MjA5MDU0MTQ5Mn0.AA7CgSig_lgXSwVeZex-C1AExRKgN1sMuIBnzH9pfqM";
     const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const params = new URLSearchParams(window.location.search);
     const rawId = params.get('id');
-    const chatId = (rawId && rawId !== "DESCONOCIDO") ? rawId : null;
+    // Si no viene por URL, intentamos sacar el ID directamente del SDK de Telegram
+    const chatId = (rawId && rawId !== "DESCONOCIDO") ? rawId : (tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id.toString() : null);
     const phone = params.get('phone') || "000";
     const SOBERANO_PHONE = "573145210546";
 
-    // CARGA INICIAL
     async function init() {
+        tg.ready(); // AVISA A TELEGRAM QUE LA APP CARGÓ (Elimina el freeze)
+        tg.expand(); // Expande la app automáticamente
+        
         document.getElementById('debugId').innerText = chatId || "No detectado";
         document.getElementById('debugPhone').innerText = phone;
+        
         await verificarEstado(); 
         suscribirCambios();     
     }
@@ -177,52 +196,62 @@
         if (phone === SOBERANO_PHONE) {
             setupUI("Carlos Albeiro Troncoso Pulido", "Soberano", "∞", true, true);
             cargarSolicitudesAduana();
-        } else {
-            if (!chatId) {
-                setupUI("Nuevo Usuario", "ID no detectado", "0", false, false);
-                document.getElementById('form-registro').style.display = 'block';
-                return;
-            }
+            return;
+        }
 
-            const { data: profile } = await _supabase.from('profiles').select('*').eq('id', chatId).maybeSingle();
-            
-            if (profile) {
-                setupUI(profile.full_name, "Usuario Activo", profile.balance_prepago, true, false);
+        if (!chatId) {
+            setupUI("Invitado", "Acceso Limitado", "0", false, false);
+            document.getElementById('form-registro').style.display = 'block';
+            return;
+        }
+
+        // 1. Check en Profiles
+        const { data: profile } = await _supabase.from('profiles').select('*').eq('id', chatId).maybeSingle();
+        
+        if (profile) {
+            setupUI(profile.full_name, "Usuario Activo", profile.balance_prepago, true, false);
+        } else {
+            // 2. Check en Pre-registro
+            const { data: pre } = await _supabase.from('pre_registro').select('*').eq('id', chatId).maybeSingle();
+            if (pre) {
+                setupUI("Invitado", "En Aduana", "0", false, false);
+                document.getElementById('aduana-msg').style.display = 'block';
+                document.getElementById('form-registro').style.display = 'none';
             } else {
-                const { data: pre } = await _supabase.from('pre_registro').select('*').eq('id', chatId).maybeSingle();
-                if (pre) {
-                    setupUI("Invitado", "En Aduana", "0", false, false);
-                    document.getElementById('aduana-msg').style.display = 'block';
-                    document.getElementById('form-registro').style.display = 'none';
-                } else {
-                    setupUI("Nuevo Usuario", "Registro Requerido", "0", false, false);
-                    document.getElementById('form-registro').style.display = 'block';
-                    document.getElementById('aduana-msg').style.display = 'none';
-                }
+                setupUI("Nuevo Usuario", "Registro Requerido", "0", false, false);
+                document.getElementById('form-registro').style.display = 'block';
+                document.getElementById('aduana-msg').style.display = 'none';
             }
         }
     }
 
     function suscribirCambios() {
-        if (chatId) {
-            _supabase.channel('cambios-perfil').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${chatId}` }, () => { verificarEstado(); }).subscribe();
-        }
-        _supabase.channel('cambios-aduana').on('postgres_changes', { event: '*', schema: 'public', table: 'pre_registro' }, () => {
-            if (phone === SOBERANO_PHONE) cargarSolicitudesAduana();
-            else verificarEstado();
-        }).subscribe();
+        if (!chatId) return;
+
+        // Escuchar cambios en Perfiles (Para cuando lo aprueban)
+        _supabase.channel('cambios-perfil')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${chatId}` }, () => { 
+                verificarEstado(); 
+            }).subscribe();
+
+        // Escuchar cambios en Pre-registro (Para el Soberano)
+        _supabase.channel('cambios-aduana')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'pre_registro' }, () => {
+                if (phone === SOBERANO_PHONE) cargarSolicitudesAduana();
+                else verificarEstado();
+            }).subscribe();
     }
 
     function setupUI(name, status, balance, active, isSoberano) {
         document.getElementById('userName').innerText = name;
-        document.getElementById('statusDot').style.background = active ? '#27ae60' : '#f1c40f';
-        document.getElementById('userStatus').innerHTML = `<span class="status-dot" style="background:${active?'#27ae60':'#f1c40f'}"></span> ${status}`;
+        const color = active ? '#27ae60' : (status === "En Aduana" ? '#f1c40f' : '#94a3b8');
+        document.getElementById('userStatus').innerHTML = `<span class="status-dot" style="background:${color}"></span> ${status}`;
         document.getElementById('userBalance').innerText = balance === "∞" ? "∞" : "$" + balance;
         document.getElementById('walletAmount').innerText = balance === "∞" ? "∞" : "$" + balance;
         
         if (isSoberano) document.getElementById('nav-aduana-btn').style.display = 'block';
         
-        if (active) {
+        if (active || isSoberano) {
             showScreen('screen-home');
             document.getElementById('mainNav').style.opacity = "1";
             document.getElementById('mainNav').style.pointerEvents = "auto";
@@ -234,103 +263,101 @@
     }
 
     async function enviarAduana() {
-        const nombre = document.getElementById('regName').value;
-        const doc = document.getElementById('regDoc').value;
-        if (!nombre || !doc) return alert("Por favor, completa tus datos.");
-        if (!chatId) return alert("Error: No se detectó tu ID. Abre la app desde el bot.");
+        const nombre = document.getElementById('regName').value.trim();
+        const doc = document.getElementById('regDoc').value.trim();
+        if (!nombre || !doc) return tg.showAlert("Por favor, completa tus datos.");
+        
+        tg.showConfirm("¿Confirmas que tus datos son correctos?", async (ok) => {
+            if(!ok) return;
+            
+            const { error } = await _supabase.from('pre_registro').insert([{ 
+                id: chatId, full_name: nombre, phone: phone, numero_documento: doc, status: 'pendiente' 
+            }]);
 
-        const { error } = await _supabase.from('pre_registro').insert([{ 
-            id: chatId, full_name: nombre, phone: phone, numero_documento: doc, status: 'pendiente' 
-        }]);
-
-        if (error && error.code !== "23505") {
-            alert("Error al registrar: " + error.message);
-        } else {
-            document.getElementById('form-registro').style.display = 'none';
-            document.getElementById('aduana-msg').style.display = 'block';
-            document.getElementById('msg-feedback').style.display = 'block';
-        }
+            if (error && error.code !== "23505") {
+                tg.showAlert("Error: " + error.message);
+            } else {
+                verificarEstado();
+            }
+        });
     }
 
     async function cargarSolicitudesAduana() {
         const { data } = await _supabase.from('pre_registro').select('*').eq('status', 'pendiente');
         const container = document.getElementById('lista-aduana');
+        const badge = document.getElementById('count-badge');
+        
         if (data && data.length > 0) {
-            document.getElementById('count-badge').innerText = data.length;
-            document.getElementById('count-badge').style.display = 'inline';
+            badge.innerText = data.length;
+            badge.style.display = 'inline';
             container.innerHTML = data.map(user => `
                 <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                    <div><strong>${user.full_name}</strong><br><small>ID: ${user.id}</small></div>
-                    <div style="display:flex; gap:10px;">
-                        <button onclick="aprobarUsuario('${user.id}','${user.full_name}','${user.phone}')" style="color:#27ae60; border:none; background:none; font-size:24px; cursor:pointer;"><i class="fas fa-circle-check"></i></button>
-                        <button onclick="rechazarUsuario('${user.id}')" style="color:#e74c3c; border:none; background:none; font-size:24px; cursor:pointer;"><i class="fas fa-circle-xmark"></i></button>
+                    <div><strong>${user.full_name}</strong><br><small>Tel: ${user.phone}</small></div>
+                    <div style="display:flex; gap:12px;">
+                        <button onclick="aprobarUsuario('${user.id}','${user.full_name}','${user.phone}')" style="color:#27ae60; border:none; background:none; font-size:26px; cursor:pointer;"><i class="fas fa-check-circle"></i></button>
+                        <button onclick="rechazarUsuario('${user.id}')" style="color:#e74c3c; border:none; background:none; font-size:26px; cursor:pointer;"><i class="fas fa-times-circle"></i></button>
                     </div>
                 </div>
             `).join('');
         } else {
-            document.getElementById('count-badge').style.display = 'none';
+            badge.style.display = 'none';
             container.innerHTML = `<p style="text-align:center; color:#94a3b8; margin-top:50px;">Aduana despejada, Soberano.</p>`;
         }
     }
 
-async function enviarTelegram(destId, mensaje) {
-    // Reemplaza con tu nuevo token verificado
-    const token = "8213798026:AAF8xKZijSKNkrplk1lqDE7um2Dfr3b5nIQ"; 
-    try {
-        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ 
-                chat_id: Number(destId), 
-                text: mensaje, 
-                parse_mode: 'Markdown' 
-            })
-        });
-    } catch(e) { console.error("Error Telegram:", e); }
-}
+    async function aprobarUsuario(targetId, nombre, tel) {
+        tg.MainButton.setText("PROCESANDO...").show();
+        try {
+            const { error: err1 } = await _supabase.from('profiles').insert([{ 
+                id: targetId, full_name: nombre, phone: tel, balance_prepago: 0 
+            }]);
+            if (err1) throw err1;
 
-async function aprobarUsuario(targetId, nombre, tel) {
-    try {
-        // 1. CREAR PERFIL (Aparece en la tabla profiles)
-        const { error: err1 } = await _supabase.from('profiles').insert([{ 
-            id: targetId, full_name: nombre, phone: tel, balance_prepago: 0 
-        }]);
-        if (err1) throw err1;
-
-        // 2. BORRAR DE ADUANA 
-        // ¡IMPORTANTE! Al borrar este registro, el Realtime del cliente 
-        // detecta que ya no está en aduana y lo manda a la Home.
-        await _supabase.from('pre_registro').delete().eq('id', targetId);
-        
-        // 3. NOTIFICACIÓN (Si falla Telegram, el usuario ya entró igual)
-        enviarTelegram(targetId, `🌟 *¡Aprobado!* \nHola ${nombre}, el Soberano ha autorizado tu ingreso.`);
-        
-        alert("Usuario aprobado con éxito.");
-    } catch (error) {
-        alert("Error: " + error.message);
+            await _supabase.from('pre_registro').delete().eq('id', targetId);
+            
+            // Enviar notificación (Async)
+            enviarTelegram(targetId, `🌟 *¡Aprobado!* \nHola ${nombre}, el Soberano ha autorizado tu ingreso.`);
+            
+            tg.HapticFeedback.notificationOccurred('success');
+            cargarSolicitudesAduana();
+        } catch (e) {
+            tg.showAlert("Error: " + e.message);
+        } finally {
+            tg.MainButton.hide();
+        }
     }
-}
 
     async function rechazarUsuario(targetId) {
-        if (confirm("¿Soberano, desea rechazar este aspirante?")) {
-            const { error } = await _supabase.from('pre_registro').delete().eq('id', targetId);
-            if (!error) {
-                await enviarTelegram(targetId, `🚫 *Acceso denegado* \nTu solicitud ha sido rechazada.`);
-                alert("Usuario rechazado.");
-            }
+        if (confirm("¿Rechazar aspirante?")) {
+            await _supabase.from('pre_registro').delete().eq('id', targetId);
+            enviarTelegram(targetId, `🚫 *Acceso denegado* \nTu solicitud ha sido rechazada.`);
+            cargarSolicitudesAduana();
         }
+    }
+
+    async function enviarTelegram(destId, mensaje) {
+        const token = "8213798026:AAF8xKZijSKNkrplk1lqDE7um2Dfr3b5nIQ"; 
+        fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ chat_id: Number(destId), text: mensaje, parse_mode: 'Markdown' })
+        }).catch(e => console.error("Error Telegram:", e));
     }
 
     function showScreen(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        const target = document.getElementById(id);
-        if (target) target.classList.add('active');
+        document.getElementById(id).classList.add('active');
     }
 
     function changeScreen(type, el) {
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active-nav'));
         el.classList.add('active-nav');
         showScreen('screen-' + type);
+        tg.HapticFeedback.impactOccurred('light');
+    }
+
+    function tgHaptic() {
+        tg.HapticFeedback.impactOccurred('medium');
     }
 
     init();
