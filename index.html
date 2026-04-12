@@ -14,7 +14,6 @@
             --glass: rgba(255, 255, 255, 0.9);
             --success: #27ae60;
             --danger: #e74c3c;
-            --warning: #f1c40f;
         }
 
         body { 
@@ -81,15 +80,6 @@
             background: linear-gradient(135deg, #1e293b, #334155);
             color: white; padding: 25px; border-radius: 24px; text-align: center;
         }
-
-        /* Estilos específicos para la lista de Aduana */
-        .aduana-card {
-            border-left: 5px solid var(--primary);
-        }
-        .aduana-info small { color: #64748b; display: block; margin-top: 2px; }
-        .aduana-actions { display: flex; gap: 15px; }
-        .btn-action { border: none; background: none; font-size: 26px; cursor: pointer; transition: 0.2s; }
-        .btn-action:active { transform: scale(0.8); }
     </style>
 </head>
 <body>
@@ -97,7 +87,7 @@
 <div id="app">
     <header>
         <div class="user-info">
-            <h2 id="userName">Cargando...</h2>
+            <h2 id="userName">Samy App</h2>
             <p id="userStatus" style="margin:0; font-size: 11px;"><span class="status-dot"></span> Verificando...</p>
         </div>
         <div id="userBalance" style="font-weight: 800; color: var(--primary); font-size: 20px;">$0</div>
@@ -134,13 +124,8 @@
     </div>
 
     <div id="screen-aduana" class="screen">
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
-            <i class="fas fa-shield-halved fa-2x" style="color: var(--primary);"></i>
-            <h3 style="margin:0;">Gestión de Aduana</h3>
-        </div>
-        <div id="lista-aduana">
-            <p style="text-align:center; color:#94a3b8; margin-top:50px;">Buscando solicitudes...</p>
-        </div>
+        <h3><i class="fas fa-shield-halved"></i> Gestión de Aduana</h3>
+        <div id="lista-aduana"></div>
     </div>
 
     <div id="screen-wallet" class="screen">
@@ -148,26 +133,6 @@
             <p style="opacity: 0.7; font-size: 14px;">Saldo Disponible</p>
             <h1 id="walletAmount" style="font-size: 42px; margin: 10px 0;">$0</h1>
             <i class="fas fa-wallet" style="opacity: 0.2; font-size: 50px;"></i>
-        </div>
-        <div class="card" style="margin-top: 20px;">
-            <h4 style="margin-top:0;"><i class="fas fa-history"></i> Actividad Reciente</h4>
-            <p style="color: #64748b; font-size: 14px; text-align: center;">No hay transacciones recientes.</p>
-        </div>
-    </div>
-
-    <div id="screen-profile" class="screen">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <div style="width: 80px; height: 80px; background: var(--primary); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: white;">
-                <i class="fas fa-user fa-3x"></i>
-            </div>
-            <h3 id="profileName" style="margin: 10px 0 5px 0;">Usuario</h3>
-            <p id="profilePhone" style="color: #64748b; margin: 0; font-size: 14px;"></p>
-        </div>
-        <div class="card" onclick="alert('Próximamente')">
-            <i class="fas fa-gear"></i> Configuración de Cuenta
-        </div>
-        <div class="card" onclick="location.reload()" style="color: var(--danger);">
-            <i class="fas fa-right-from-bracket"></i> Cerrar Sesión
         </div>
     </div>
 
@@ -182,12 +147,10 @@
 </div>
 
 <script>
-    // CONFIGURACIÓN DE SUPABASE
-    const SUPABASE_URL = "https://fsdqvdvxvhqauyqczsfb.supabase.co";
+    const SUPABASE_URL = "https://fsdqvdxvhqauyqczgsfb.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzZHF2ZHh2aHFhdXlxY3pnc2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NjU0OTIsImV4cCI6MjA5MDU0MTQ5Mn0.AA7CgSig_lgXSwVeZex-C1AExRKgN1sMuIBnzH9pfqM";
     const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // PARÁMETROS DE URL
     const params = new URLSearchParams(window.location.search);
     const chatId = params.get('id') || "DESCONOCIDO";
     const phone = params.get('phone') || "000";
@@ -200,15 +163,12 @@
 
     async function verificarEstado() {
         if (phone === SOBERANO_PHONE) {
-            setupUI("Carlos Troncoso", "Soberano", "∞", true, true);
+            setupUI("Carlos Albeiro Troncoso Pulido", "Soberano", "∞", true, true);
             cargarSolicitudesAduana();
         } else {
             const { data: profile } = await _supabase.from('profiles').select('*').eq('id', chatId).maybeSingle();
-            
             if (profile) {
                 setupUI(profile.full_name, "Usuario Activo", profile.balance_prepago, true, false);
-                document.getElementById('profileName').innerText = profile.full_name;
-                document.getElementById('profilePhone').innerText = "+" + profile.phone;
             } else {
                 const { data: pre } = await _supabase.from('pre_registro').select('*').eq('id', chatId).maybeSingle();
                 if (pre) {
@@ -243,10 +203,9 @@
 
     function setupUI(name, status, balance, active, isSoberano) {
         document.getElementById('userName').innerText = name;
-        document.getElementById('userStatus').innerHTML = `<span class="status-dot" style="background:${active?'#27ae60':(status==='En Aduana'?'#f1c40f':'#e74c3c')}"></span> ${status}`;
-        const bDisplay = balance === "∞" ? "∞" : "$" + balance;
-        document.getElementById('userBalance').innerText = bDisplay;
-        document.getElementById('walletAmount').innerText = bDisplay;
+        document.getElementById('userStatus').innerHTML = `<span class="status-dot" style="background:${active?'#27ae60':'#f1c40f'}"></span> ${status}`;
+        document.getElementById('userBalance').innerText = balance === "∞" ? "∞" : "$" + balance;
+        document.getElementById('walletAmount').innerText = balance === "∞" ? "∞" : "$" + balance;
 
         if (isSoberano) document.getElementById('nav-aduana-btn').style.display = 'block';
         
@@ -264,8 +223,10 @@
     async function enviarAduana() {
         const nombre = document.getElementById('regName').value;
         const doc = document.getElementById('regDoc').value;
+        
         if (!nombre || !doc) return alert("Por favor, completa tus datos.");
 
+        // UX: Cambiamos la vista inmediatamente para evitar doble click
         document.getElementById('form-registro').style.display = 'none';
         document.getElementById('aduana-msg').style.display = 'block';
 
@@ -278,39 +239,34 @@
         }]);
 
         if (error) {
-            document.getElementById('form-registro').style.display = 'block';
-            document.getElementById('aduana-msg').style.display = 'none';
-            alert("Error al enviar: " + error.message);
+            if (error.code === "23505") { // Error de duplicado
+                console.log("El usuario ya estaba en aduana.");
+            } else {
+                // Si es un error real (internet, etc), avisamos con tacto
+                document.getElementById('form-registro').style.display = 'block';
+                document.getElementById('aduana-msg').style.display = 'none';
+                alert("Tuvimos un problema de conexión, por favor intenta de nuevo.");
+            }
         } else {
-            document.getElementById('msg-feedback').style.display = 'block';
+            // Éxito: Mostrar un pequeño feedback visual
+            const feedback = document.getElementById('msg-feedback');
+            feedback.style.display = 'block';
+            setTimeout(() => { feedback.style.opacity = '0'; }, 3000);
         }
     }
 
     async function cargarSolicitudesAduana() {
         const { data } = await _supabase.from('pre_registro').select('*').eq('status', 'pendiente');
         const container = document.getElementById('lista-aduana');
-        
         if (data && data.length > 0) {
             document.getElementById('count-badge').innerText = data.length;
             document.getElementById('count-badge').style.display = 'inline';
-            
             container.innerHTML = data.map(user => `
-                <div class="card aduana-card">
-                    <div style="display:flex; justify-content:space-between; align-items:start;">
-                        <div class="aduana-info">
-                            <strong style="font-size: 16px;">${user.full_name}</strong>
-                            <small><i class="fas fa-id-card"></i> Doc: ${user.numero_documento}</small>
-                            <small><i class="fas fa-phone"></i> Tel: +${user.phone}</small>
-                            <small><i class="fas fa-clock"></i> ID: ${user.id}</small>
-                        </div>
-                        <div class="aduana-actions">
-                            <button class="btn-action" onclick="aprobarUsuario('${user.id}','${user.full_name}','${user.phone}')" style="color:var(--success);">
-                                <i class="fas fa-circle-check"></i>
-                            </button>
-                            <button class="btn-action" onclick="rechazarUsuario('${user.id}')" style="color:var(--danger);">
-                                <i class="fas fa-circle-xmark"></i>
-                            </button>
-                        </div>
+                <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div><strong>${user.full_name}</strong><br><small>CC: ${user.numero_documento}</small></div>
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="aprobarUsuario('${user.id}','${user.full_name}','${user.phone}')" style="color:#27ae60; border:none; background:none; font-size:24px; cursor:pointer;"><i class="fas fa-circle-check"></i></button>
+                        <button onclick="rechazarUsuario('${user.id}')" style="color:#e74c3c; border:none; background:none; font-size:24px; cursor:pointer;"><i class="fas fa-circle-xmark"></i></button>
                     </div>
                 </div>
             `).join('');
@@ -320,29 +276,29 @@
         }
     }
 
-    async function aprobarUsuario(id, nombre, tel) {
-        // 1. Insertar en profiles
-        const { error: err1 } = await _supabase.from('profiles').insert([{ 
-            id: id, 
-            full_name: nombre, 
-            phone: tel, 
-            balance_prepago: 0 
-        }]);
+    async function enviarTelegram(id, msj) {
+        const token = "7547466540:AAEYm7Z9_NIdl-O2R0Gsh8pQitE26U_5A4A";
+        try {
+            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ chat_id: id, text: msj, parse_mode: 'Markdown' })
+            });
+        } catch(e) { console.error("Error enviando Telegram"); }
+    }
 
+    async function aprobarUsuario(id, nombre, tel) {
+        const { error: err1 } = await _supabase.from('profiles').insert([{ id, full_name: nombre, phone: tel, balance_prepago: 0 }]);
         if (!err1) {
-            // 2. Eliminar de pre_registro
             await _supabase.from('pre_registro').delete().eq('id', id);
-            // La notificación de Telegram queda pendiente según tu instrucción
-            alert("Usuario " + nombre + " aprobado con éxito.");
-        } else {
-            alert("Error al aprobar: " + err1.message);
+            await enviarTelegram(id, `🌟 *¡Aprobado!* \nHola ${nombre}, el Soberano ha autorizado tu ingreso a Samy App.`);
         }
     }
 
     async function rechazarUsuario(id) {
-        if (confirm("¿Soberano, confirma el rechazo de esta solicitud?")) {
-            const { error } = await _supabase.from('pre_registro').delete().eq('id', id);
-            if (error) alert("Error al rechazar.");
+        if (confirm("¿Soberano, desea rechazar este aspirante?")) {
+            await _supabase.from('pre_registro').delete().eq('id', id);
+            await enviarTelegram(id, `🚫 *Acceso denegado* \nTu solicitud de ingreso ha sido rechazada.`);
         }
     }
 
@@ -357,7 +313,6 @@
         showScreen('screen-' + type);
     }
 
-    // Arrancar App
     init();
 </script>
 </body>
