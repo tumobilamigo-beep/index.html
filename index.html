@@ -125,8 +125,8 @@
             return;
         }
 
-        window._chatId = chatId;
-        window._phone  = phone;
+        window._chatId = Number(chatId); // ← BIGINT desde el inicio
+        window._phone  = phone;          // ← phone se queda como string (TEXT en DB)
 
         const { profile, preRegistro } = await apiService.verificarIdentidad(chatId);
 
