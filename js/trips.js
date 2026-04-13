@@ -3,7 +3,7 @@
 import { _supabase } from './api.js';
 import { telegramUtils } from './utils.js';
 
-const PRECIO_POR_KM = 1900;
+const PRECIO_POR_KM = 2500;
 
 export const tripsModule = {
 
