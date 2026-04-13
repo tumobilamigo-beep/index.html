@@ -117,40 +117,43 @@
     }
 
     // ─── Init ─────────────────────────────────────────────────────
-    async function init() {
-        const { chatId, phone } = telegramUtils.getUrlParams();
+   async function init() {
+    const { chatId, phone } = telegramUtils.getUrlParams();
 
-        if (!chatId || !phone) {
-            document.getElementById('userName').textContent = 'Acceso inválido';
-            return;
-        }
-
-        window._chatId = Number(chatId); // ← BIGINT desde el inicio
-        window._phone  = phone;          // ← phone se queda como string (TEXT en DB)
-
-        const { profile, preRegistro } = await apiService.verificarIdentidad(chatId);
-
-        if (profile) {
-            document.getElementById('userName').textContent    = profile.full_name;
-            document.getElementById('userBalance').textContent = telegramUtils.formatCOP(profile.balance_prepago || 0);
-
-            if (telegramUtils.esSoberano(phone)) {
-                document.getElementById('nav-aduana-btn').style.display = 'flex';
-                await cargarAduana();
-            }
-
-            window.showScreen('screen-home');
-
-        } else if (preRegistro) {
-            document.getElementById('aduana-msg').style.display = 'block';
-            window.showScreen('screen-register');
-
-        } else {
-            document.getElementById('form-registro').style.display = 'block';
-            window.showScreen('screen-register');
-        }
+    if (!chatId || !phone) {
+        document.getElementById('userName').textContent = 'Acceso inválido';
+        return;
     }
 
+    window._chatId = Number(chatId);
+    window._phone  = phone;
+
+    const { profile, preRegistro } = await apiService.verificarIdentidad(chatId);
+
+    if (profile) {
+        document.getElementById('userName').textContent    = profile.full_name;
+        document.getElementById('userBalance').textContent = telegramUtils.formatCOP(profile.balance_prepago || 0);
+
+        // ✅ Problema 7: verificación server-side — consulta la DB, no confía en la URL
+        const rolData = await apiService.getRolUsuario(chatId);
+        const esSoberanoReal = rolData?.role === 'admin' && rolData?.habilitado_por_admin === true;
+
+        if (esSoberanoReal) {
+            document.getElementById('nav-aduana-btn').style.display = 'flex';
+            await cargarAduana();
+        }
+
+        window.showScreen('screen-home');
+
+    } else if (preRegistro) {
+        document.getElementById('aduana-msg').style.display = 'block';
+        window.showScreen('screen-register');
+
+    } else {
+        document.getElementById('form-registro').style.display = 'block';
+        window.showScreen('screen-register');
+    }
+}
     init();
 </script>
     
