@@ -258,19 +258,22 @@ window.changeScreen = async (type, el) => {
 
     // ─── CONDUCTOR ────────────────────────────────────────────────
         window.driverModule = driverModule; // expone al HTML para los onclick
+
+     // ─── CLOUDINARY ───────────────────────────────────────────────  
+        window.cloudinaryModule = cloudinaryModule;
    
     // ─── VIAJES ───────────────────────────────────────────────────  
-    window.tripsModule = tripsModule;
+        window.tripsModule = tripsModule;
 
     
-    window.solicitarViaje = async () => {
-        const pos     = geoModule.getPosicion();
-        const destino = document.getElementById('input-destino').value.trim();
+        window.solicitarViaje = async () => {
+            const pos     = geoModule.getPosicion();
+            const destino = document.getElementById('input-destino').value.trim();
 
-        if (!pos)     { telegramUtils.showError('Espera a que se detecte tu ubicación.'); return; }
-        if (!destino) { telegramUtils.showError('Escribe tu destino.'); return; }
+            if (!pos)     { telegramUtils.showError('Espera a que se detecte tu ubicación.'); return; }
+            if (!destino) { telegramUtils.showError('Escribe tu destino.'); return; }
 
-        await tripsModule.iniciarSolicitud(window._chatId, destino, pos);
+            await tripsModule.iniciarSolicitud(window._chatId, destino, pos);
     };
 
     window.cancelarViaje = () => tripsModule.iniciarCancelacion();
