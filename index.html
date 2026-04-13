@@ -266,6 +266,9 @@
     if (profile) {
         document.getElementById('userName').textContent    = profile.full_name;
         document.getElementById('userBalance').textContent = telegramUtils.formatCOP(profile.balance_prepago || 0);
+        window.showScreen('screen-home');
+        geoModule.iniciarConUI(window._chatId);
+        await tripsModule.verificarViajeActivo(window._chatId)
 
         // ✅ Problema 7: verificación server-side — consulta la DB, no confía en la URL
         const rolData = await apiService.getRolUsuario(chatId);
