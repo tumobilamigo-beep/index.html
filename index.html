@@ -175,6 +175,7 @@
     import { tripsModule } from './js/trips.js';
     import { driverModule } from './js/driver.js'; 
     import { walletModule } from './js/wallet.js'
+    import { cloudinaryModule } from './js/cloudinary.js';
 
 
      // ─── NAVEGACIÓN ───────────────────────────────────────────────
@@ -258,6 +259,7 @@ window.changeScreen = async (type, el) => {
     // ─── VIAJES ───────────────────────────────────────────────────  
     window.tripsModule = tripsModule;
 
+    
     window.solicitarViaje = async () => {
         const pos     = geoModule.getPosicion();
         const destino = document.getElementById('input-destino').value.trim();
@@ -272,6 +274,9 @@ window.changeScreen = async (type, el) => {
 
     // ─── WALLET ───────────────────────────────────────────────────
     window.walletModule = walletModule;
+
+    // ─── CLOUDINARY ───────────────────────────────────────────────
+    window.cloudinaryModule = cloudinaryModule;
     
     // ─── INIT ─────────────────────────────────────────────────────
    async function init() {
