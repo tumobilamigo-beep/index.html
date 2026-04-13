@@ -28,7 +28,7 @@
             </div>
             <input type="text" id="regName" placeholder="Nombre Completo">
             <input type="number" id="regDoc" placeholder="Número de Documento">
-            <button id="btnSolicitar" class="btn-main" onclick="enviarAduana()">Solicitar Ingreso</button>
+            <button id="btnSolicitar" class="btn-main">Solicitar Ingreso</button>
         </div>
 
         <div id="aduana-msg" style="display:none; text-align: center; margin-top: 50px;">
@@ -100,35 +100,67 @@
 </div>
 
 <script type="module">
-        // Importamos la lógica de los archivos que creaste
-        import { _supabase, apiService } from './js/api.js';
-        import { aduanaModule } from './js/aduana.js';
-        import { telegramUtils } from './js/utils.js';
+    import { apiService } from './js/api.js';
+    import { aduanaModule } from './js/aduana.js';
 
-        // Vinculamos las funciones a 'window' para que los onclick="abrirDetalleAduana(...)" funcionen
-        window.abrirDetalleAduana = (user) => aduanaModule.abrirDetalle(user);
-        window.cerrarModal = () => document.getElementById('modal-review').style.display = 'none';
+    // 1. Exportar a Window para compatibilidad con onclick del HTML
+    window.cerrarModal = () => document.getElementById('modal-review').style.display = 'none';
+    window.abrirDetalleAduana = (user) => aduanaModule.abrirDetalle(user);
 
-        // Lógica de navegación (para que no se pierda al modularizar)
-        window.showScreen = (id) => {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        };
+    window.showScreen = (id) => {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        const target = document.getElementById(id);
+        if(target) target.classList.add('active');
+    };
 
-        window.changeScreen = (type, el) => {
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active-nav'));
-            el.classList.add('active-nav');
-            window.showScreen('screen-' + type);
-        };
+    window.changeScreen = (type, el) => {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active-nav'));
+        el.classList.add('active-nav');
+        window.showScreen('screen-' + type);
+    };
 
-        async function init() {
-            console.log("Samy App Modular v1.0 - Iniciada");
-            // Aquí llamarás a verificarEstado() cuando terminemos de moverlo
+    // 2. Función de carga de datos (Soberano)
+    async function cargarAduana() {
+        try {
+            const aspirantes = await apiService.getAspirantes();
+            const container = document.getElementById('lista-aduana');
+            const badge = document.getElementById('count-badge');
+            
+            if (aspirantes && aspirantes.length > 0) {
+                badge.innerText = aspirantes.length;
+                badge.style.display = 'inline';
+                container.innerHTML = aspirantes.map(user => `
+                    <div class="card" onclick='abrirDetalleAduana(${JSON.stringify(user)})' style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <strong>${user.full_name}</strong><br>
+                            <small style="color: #64748b;">CC: ${user.numero_documento}</small>
+                        </div>
+                        <i class="fas fa-chevron-right" style="color:#cbd5e1;"></i>
+                    </div>
+                `).join('');
+            } else {
+                badge.style.display = 'none';
+                container.innerHTML = '<p style="text-align:center; color:#94a3b8;">No hay solicitudes.</p>';
+            }
+        } catch (error) { console.error("Error cargando lista:", error); }
+    }
+
+    // 3. Inicialización
+    async function init() {
+        const params = new URLSearchParams(window.location.search);
+        const phone = params.get('phone');
+        const SOBERANO_PHONE = "573145210546"; 
+
+        if (phone === SOBERANO_PHONE) {
+            document.getElementById('userName').innerText = "Carlos (Soberano)";
+            document.getElementById('nav-aduana-btn').style.display = 'block';
+            await cargarAduana();
         }
+        
+        window.showScreen('screen-home');
+    }
 
-        init();
-    </script>
-</body>
-</html>
+    init();
+</script>
 </body>
 </html>
