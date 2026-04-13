@@ -138,11 +138,7 @@
 </div>
 
        <div id="screen-wallet" class="screen">
-        <div class="wallet-card">
-            <p style="opacity: 0.7; font-size: 14px;">Saldo Disponible</p>
-            <h1 id="walletAmount" style="font-size: 42px; margin: 10px 0;">$0</h1>
-            <i class="fas fa-wallet" style="opacity: 0.2; font-size: 50px;"></i>
-        </div>
+        
     </div>
     
     <nav id="mainNav">
@@ -183,10 +179,15 @@
         document.getElementById(id).classList.add('active');
     };
 
-    window.changeScreen = (type, el) => {
+window.changeScreen = async (type, el) => {
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active-nav'));
         el.classList.add('active-nav');
         window.showScreen('screen-' + type);
+
+        // Carga la wallet en tiempo real cada vez que se abre
+        if (type === 'wallet' && window._chatId) {
+            await walletModule.iniciarWallet(window._chatId, window._role || 'cliente');
+        }
     };
 
     // ─── ADUANA: MODAL ────────────────────────────────────────────
@@ -286,7 +287,6 @@
         document.getElementById('userName').textContent    = profile.full_name;
         document.getElementById('userBalance').textContent = telegramUtils.formatCOP(profile.balance_prepago || 0);
         
-        // ✅ Problema 7: verificación server-side — consulta la DB, no confía en la URL
         const rolData = await apiService.getRolUsuario(chatId);
         const esSoberanoReal = rolData?.role === 'admin' && rolData?.habilitado_por_admin === true;
 
@@ -298,6 +298,8 @@
             document.getElementById('nav-driver-btn').style.display = 'flex';
             await driverModule.iniciarPanelDriver(window._chatId);
         }
+        // Guarda el role para usarlo en la billetera
+        window._role = profile.role;
         
         window.showScreen('screen-home');
         geoModule.iniciarConUI(window._chatId);
