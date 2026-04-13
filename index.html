@@ -166,44 +166,11 @@
     }
 
     // ─── GEOLOCALIZACIÓN ──────────────────────────────────────────
-    function iniciarGeo() {
-        geoModule.iniciar(
-            // onSuccess
-            (pos) => {
-                document.getElementById('geo-detecting').style.display = 'none';
-                document.getElementById('geo-error').style.display     = 'none';
-                document.getElementById('geo-ok').style.display        = 'block';
-
-                document.getElementById('geo-coords').textContent    = 
-                    `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`;
-                document.getElementById('geo-precision').textContent = 
-                    `Precisión: ±${pos.precision} m`;
-
-                // Habilita el botón de solicitar servicio
-                document.getElementById('btn-solicitar').disabled = false;
-
-                // Guarda en DB cada actualización (throttle: solo si el módulo tiene _supabase)
-                geoModule.guardarUbicacion(_supabase, window._chatId, pos.lat, pos.lng);
-            },
-            // onError
-            (mensaje) => {
-                document.getElementById('geo-detecting').style.display = 'none';
-                document.getElementById('geo-ok').style.display        = 'none';
-                document.getElementById('geo-error').style.display     = 'block';
-                document.getElementById('geo-error-msg').textContent   = mensaje;
-            }
-        );
-    }
-
-    // Botón reintentar
-        window.reintentarGeo = () => {
-        document.getElementById('geo-error').style.display     = 'none';
-        document.getElementById('geo-detecting').style.display = 'block';
-        geoModule.detener();
-        iniciarGeo();
-    };  
-
+    // Después ✅
+        geoModule.iniciarConUI(window._chatId);  
     
+    // ✅ geo.js se encarga de todo
+        window.reintentarGeo = () => geoModule.reintentar(window._chatId);
     
     // ─── INIT ─────────────────────────────────────────────────────
    async function init() {
