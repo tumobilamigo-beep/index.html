@@ -17,41 +17,58 @@
         <div id="userBalance" style="font-weight: 800; color: var(--primary); font-size: 20px;">$0</div>
     </header>
 
-    <<div id="screen-home" class="screen">
-    
-    <!-- Tarjeta del mapa -->
-    <div class="card" style="height: 280px; display: flex; flex-direction: column; 
+   <div id="screen-home" class="screen">
+
+    <!-- Tarjeta del mapa / ubicación -->
+    <div class="card" style="height: 280px; display: flex; flex-direction: column;
          align-items: center; justify-content: center; background: #f1f5f9; position: relative;">
-        
-        <!-- Estado inicial -->
+
         <div id="geo-detecting" style="text-align: center; color: #94a3b8;">
             <i class="fas fa-location-crosshairs fa-3x"></i>
             <p>Detectando ubicación...</p>
         </div>
 
-        <!-- Ubicación obtenida -->
         <div id="geo-ok" style="display:none; text-align: center;">
             <i class="fas fa-location-dot fa-3x" style="color: var(--success);"></i>
             <p style="margin: 8px 0 4px; font-weight: 700; color: var(--dark);" id="geo-coords"></p>
             <p style="margin: 0; font-size: 12px; color: #94a3b8;" id="geo-precision"></p>
         </div>
 
-        <!-- Error de ubicación -->
         <div id="geo-error" style="display:none; text-align: center; color: var(--danger);">
             <i class="fas fa-triangle-exclamation fa-3x"></i>
             <p id="geo-error-msg" style="font-size: 13px;"></p>
-            <button onclick="reintentarGeo()" style="background:none; border:1px solid var(--danger); 
+            <button onclick="reintentarGeo()" style="background:none; border:1px solid var(--danger);
                 color:var(--danger); padding: 8px 16px; border-radius: 8px; cursor:pointer;">
                 Reintentar
             </button>
         </div>
     </div>
 
-    <button class="btn-main" id="btn-solicitar" style="margin-top: 15px;" disabled>
-        <i class="fas fa-paper-plane"></i> Solicitar Servicio
-    </button>
-</div>
+    <!-- Panel solicitar viaje -->
+    <div id="panel-solicitar" style="margin-top: 15px;">
+        <input type="text" id="input-destino" placeholder="¿A dónde vas?" 
+               style="margin-bottom: 10px;">
+        <button class="btn-main" id="btn-solicitar" disabled onclick="solicitarViaje()">
+            <i class="fas fa-paper-plane"></i> Solicitar Servicio
+        </button>
+    </div>
 
+    <!-- Panel viaje activo (se muestra mientras busca conductor) -->
+    <div id="panel-viaje-activo" style="display:none; margin-top: 15px;">
+        <div class="card" style="text-align: center;">
+            <i class="fas fa-spinner fa-spin fa-2x" style="color: var(--primary);"></i>
+            <h3 style="margin: 10px 0 5px;" id="viaje-status-text">Buscando conductor...</h3>
+            <p style="margin: 0; font-size: 13px; color: #64748b;" id="viaje-precio"></p>
+            <button onclick="cancelarViaje()" 
+                style="margin-top: 15px; background:none; border: 1px solid var(--danger);
+                color: var(--danger); padding: 10px 20px; border-radius: 12px; 
+                cursor:pointer; font-weight: 600; width: 100%;">
+                Cancelar viaje
+            </button>
+        </div>
+    </div>
+
+</div>
     <div id="screen-aduana" class="screen">
         <h3>Gestión de Aduana</h3>
         <div id="lista-aduana"></div>
