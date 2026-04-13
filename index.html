@@ -6,6 +6,7 @@
     <title>Samy App - Royale Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -98,187 +99,36 @@
     </div>
 </div>
 
-<script>
-    const SUPABASE_URL = "https://fsdqvdxvhqauyqczgsfb.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzZHF2ZHh2aHFhdXlxY3pnc2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NjU0OTIsImV4cCI6MjA5MDU0MTQ5Mn0.AA7CgSig_lgXSwVeZex-C1AExRKgN1sMuIBnzH9pfqM";
-    const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+<script type="module">
+        // Importamos la lógica de los archivos que creaste
+        import { _supabase, apiService } from './js/api.js';
+        import { aduanaModule } from './js/aduana.js';
+        import { telegramUtils } from './js/utils.js';
 
-    const params = new URLSearchParams(window.location.search);
-    const chatId = params.get('id') || "DESCONOCIDO";
-    const phone = params.get('phone') || "000";
-    const SOBERANO_PHONE = "573145210546";
+        // Vinculamos las funciones a 'window' para que los onclick="abrirDetalleAduana(...)" funcionen
+        window.abrirDetalleAduana = (user) => aduanaModule.abrirDetalle(user);
+        window.cerrarModal = () => document.getElementById('modal-review').style.display = 'none';
 
-    async function init() {
-        await verificarEstado(); 
-        suscribirCambios();     
-    }
+        // Lógica de navegación (para que no se pierda al modularizar)
+        window.showScreen = (id) => {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        };
 
-    async function verificarEstado() {
-        if (phone === SOBERANO_PHONE) {
-            setupUI("Carlos Albeiro Troncoso Pulido", "Soberano", "∞", true, true);
-            cargarSolicitudesAduana();
-        } else {
-            const { data: profile } = await _supabase.from('profiles').select('*').eq('id', chatId).maybeSingle();
-            if (profile) {
-                setupUI(profile.full_name, "Usuario Activo", profile.balance_prepago, true, false);
-            } else {
-                const { data: pre } = await _supabase.from('pre_registro').select('*').eq('id', chatId).maybeSingle();
-                if (pre) {
-                    setupUI("Invitado", "En Aduana", "0", false, false);
-                    document.getElementById('aduana-msg').style.display = 'block';
-                    document.getElementById('form-registro').style.display = 'none';
-                } else {
-                    setupUI("Nuevo Usuario", "Registro Requerido", "0", false, false);
-                    document.getElementById('form-registro').style.display = 'block';
-                    document.getElementById('aduana-msg').style.display = 'none';
-                }
-            }
+        window.changeScreen = (type, el) => {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active-nav'));
+            el.classList.add('active-nav');
+            window.showScreen('screen-' + type);
+        };
+
+        async function init() {
+            console.log("Samy App Modular v1.0 - Iniciada");
+            // Aquí llamarás a verificarEstado() cuando terminemos de moverlo
         }
-    }
 
-    function suscribirCambios() {
-        _supabase.channel('cambios-perfil')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${chatId}` }, 
-            () => { verificarEstado(); }).subscribe();
-
-        _supabase.channel('cambios-aduana')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'pre_registro' }, 
-            () => { if (phone === SOBERANO_PHONE) cargarSolicitudesAduana(); else verificarEstado(); }).subscribe();
-    }
-
-    function setupUI(name, status, balance, active, isSoberano) {
-        document.getElementById('userName').innerText = name;
-        document.getElementById('userStatus').innerHTML = `<span class="status-dot" style="background:${active?'#27ae60':'#f1c40f'}"></span> ${status}`;
-        document.getElementById('userBalance').innerText = balance === "∞" ? "∞" : "$" + balance;
-        document.getElementById('walletAmount').innerText = balance === "∞" ? "∞" : "$" + balance;
-
-        if (isSoberano) document.getElementById('nav-aduana-btn').style.display = 'block';
-        
-        if (active) {
-            showScreen('screen-home');
-            document.getElementById('mainNav').style.opacity = "1";
-            document.getElementById('mainNav').style.pointerEvents = "auto";
-        } else {
-            showScreen('screen-register');
-            document.getElementById('mainNav').style.opacity = "0.3";
-            document.getElementById('mainNav').style.pointerEvents = "none";
-        }
-    }
-
-    async function enviarAduana() {
-        const nombre = document.getElementById('regName').value;
-        const doc = document.getElementById('regDoc').value;
-        if (!nombre || !doc) return alert("Por favor, completa tus datos.");
-
-        document.getElementById('form-registro').style.display = 'none';
-        document.getElementById('aduana-msg').style.display = 'block';
-
-        const { error } = await _supabase.from('pre_registro').insert([{ 
-            id: chatId, 
-            full_name: nombre, 
-            phone: phone, 
-            numero_documento: doc, 
-            status: 'pendiente' 
-        }]);
-
-        if (error) {
-            document.getElementById('form-registro').style.display = 'block';
-            document.getElementById('aduana-msg').style.display = 'none';
-            alert("Error al registrar: " + error.message);
-        }
-    }
-
-    async function cargarSolicitudesAduana() {
-        const { data } = await _supabase.from('pre_registro').select('*').eq('status', 'pendiente');
-        const container = document.getElementById('lista-aduana');
-        if (data && data.length > 0) {
-            document.getElementById('count-badge').innerText = data.length;
-            document.getElementById('count-badge').style.display = 'inline';
-            container.innerHTML = data.map(user => `
-                <div class="card" onclick='abrirDetalleAduana(${JSON.stringify(user)})' style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <div style="width:40px; height:40px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-weight:bold;">
-                            ${user.full_name.charAt(0)}
-                        </div>
-                        <div>
-                            <strong>${user.full_name}</strong><br>
-                            <small style="color:#64748b;">Doc: ${user.numero_documento}</small>
-                        </div>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color:#94a3b8;"></i>
-                </div>
-            `).join('');
-        } else {
-            document.getElementById('count-badge').style.display = 'none';
-            container.innerHTML = `<p style="text-align:center; color:#94a3b8; margin-top:50px;">Aduana despejada, Soberano.</p>`;
-        }
-    }
-
-    function abrirDetalleAduana(user) {
-        document.getElementById('view-foto-perfil').src = user.foto_perfil_url || '';
-        document.getElementById('view-cedula-f').src = user.cedula_frontal_url || '';
-        document.getElementById('view-cedula-t').src = user.cedula_trasera_url || '';
-
-        // Configurar botones del modal con closures para los parámetros
-        document.getElementById('btn-aprobar-final').onclick = () => aprobarUsuario(user.id, user.full_name, user.phone);
-        document.getElementById('btn-rechazar-final').onclick = () => rechazarUsuario(user.id);
-        
-        document.getElementById('modal-review').style.display = 'flex';
-    }
-
-    function cerrarModal() {
-        document.getElementById('modal-review').style.display = 'none';
-    }
-
-    async function aprobarUsuario(id, nombre, tel) {
-        if(!confirm("¿Aprobar ingreso de " + nombre + "?")) return;
-        
-        const { error: err1 } = await _supabase.from('profiles').insert([{ id, full_name: nombre, phone: tel, balance_prepago: 0 }]);
-        if (!err1) {
-            // Eliminar de pre_registro (limpiar aduana)
-            await _supabase.from('pre_registro').delete().eq('id', id);
-            await enviarTelegram(id, `🌟 *¡Aprobado!* \nHola ${nombre}, el Soberano ha autorizado tu ingreso.`);
-            cerrarModal();
-            cargarSolicitudesAduana();
-        } else {
-            alert("Error al crear perfil: " + err1.message);
-        }
-    }
-
-    async function rechazarUsuario(id) {
-        if (confirm("¿Soberano, desea rechazar y eliminar definitivamente este aspirante?")) {
-            const { error } = await _supabase.from('pre_registro').delete().eq('id', id);
-            if(!error) {
-                await enviarTelegram(id, `🚫 *Acceso denegado* \nTu solicitud ha sido rechazada.`);
-                cerrarModal();
-                cargarSolicitudesAduana();
-            }
-        }
-    }
-
-    async function enviarTelegram(id, msj) {
-        const token = "7547466540:AAEYm7Z9_NIdl-O2R0Gsh8pQitE26U_5A4A";
-        try {
-            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ chat_id: id, text: msj, parse_mode: 'Markdown' })
-            });
-        } catch(e) { console.error("Error Telegram"); }
-    }
-
-    function showScreen(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-    }
-
-    function changeScreen(type, el) {
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active-nav'));
-        el.classList.add('active-nav');
-        showScreen('screen-' + type);
-    }
-
-    init();
-</script>
+        init();
+    </script>
+</body>
+</html>
 </body>
 </html>
