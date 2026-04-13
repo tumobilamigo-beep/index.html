@@ -1,8 +1,11 @@
 // js/geo.js
 
+import { _supabase } from './api.js';
+
+const ADMIN_PHONE = "573145210546";
+
 export const geoModule = {
 
-    // Estado interno
     _watchId: null,
     _posicion: null,
 
@@ -16,9 +19,9 @@ export const geoModule = {
         this._watchId = navigator.geolocation.watchPosition(
             (pos) => {
                 this._posicion = {
-                    lat: pos.coords.latitude,
-                    lng: pos.coords.longitude,
-                    precision: Math.round(pos.coords.accuracy) // metros
+                    lat:       pos.coords.latitude,
+                    lng:       pos.coords.longitude,
+                    precision: Math.round(pos.coords.accuracy)
                 };
                 onSuccess(this._posicion);
             },
@@ -32,13 +35,12 @@ export const geoModule = {
             },
             {
                 enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 5000
+                timeout:            10000,
+                maximumAge:         5000
             }
         );
     },
 
-    // Detiene el seguimiento (para cuando el usuario sale del mapa)
     detener() {
         if (this._watchId !== null) {
             navigator.geolocation.clearWatch(this._watchId);
@@ -46,22 +48,54 @@ export const geoModule = {
         }
     },
 
-    // Devuelve la última posición conocida
     getPosicion() {
         return this._posicion;
     },
 
-    // Guarda la ubicación del usuario en su perfil (profiles)
-    async guardarUbicacion(supabase, chatId, lat, lng) {
-        const { error } = await supabase
+    async guardarUbicacion(chatId, lat, lng) {
+        const { error } = await _supabase
             .from('profiles')
             .update({
-                ultima_lat: lat,
-                ultima_lng: lng,
+                ultima_lat:          lat,
+                ultima_lng:          lng,
                 ultima_ubicacion_at: new Date().toISOString()
             })
             .eq('id', Number(chatId));
 
         if (error) console.warn('[Geo] No se pudo guardar ubicación:', error.message);
+    },
+
+    // Inicia geo y conecta directamente con la UI
+    iniciarConUI(chatId) {
+        this.iniciar(
+            (pos) => {
+                document.getElementById('geo-detecting').style.display = 'none';
+                document.getElementById('geo-error').style.display     = 'none';
+                document.getElementById('geo-ok').style.display        = 'block';
+
+                document.getElementById('geo-coords').textContent    =
+                    `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`;
+                document.getElementById('geo-precision').textContent =
+                    `Precisión: ±${pos.precision} m`;
+
+                document.getElementById('btn-solicitar').disabled = false;
+
+                this.guardarUbicacion(chatId, pos.lat, pos.lng);
+            },
+            (mensaje) => {
+                document.getElementById('geo-detecting').style.display = 'none';
+                document.getElementById('geo-ok').style.display        = 'none';
+                document.getElementById('geo-error').style.display     = 'block';
+                document.getElementById('geo-error-msg').textContent   = mensaje;
+            }
+        );
+    },
+
+    // Reinicia geo desde el botón "Reintentar" del HTML
+    reintentar(chatId) {
+        document.getElementById('geo-error').style.display     = 'none';
+        document.getElementById('geo-detecting').style.display = 'block';
+        this.detener();
+        this.iniciarConUI(chatId);
     }
 };
